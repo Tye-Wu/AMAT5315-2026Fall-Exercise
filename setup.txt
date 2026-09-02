@@ -1,0 +1,2 @@
+coding_agent_version: 2.1.258 (Claude Code)
+python3_version: Python 3.11.9
