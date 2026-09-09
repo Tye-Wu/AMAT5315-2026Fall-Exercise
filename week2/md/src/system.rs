@@ -1,27 +1,53 @@
 //! The state of a two-dimensional point-atom system and the Lennard-Jones
-//! two-body physics that acts on it.
+//! physics that acts on it.
 //!
-//! `System` is deliberately plain data — positions and velocities — so any
-//! integrator can drive it. The physics (accelerations, total energy) are free
-//! functions over that state, built on `lj_energy` and `lj_force`.
+//! `System` is deliberately plain data — positions, velocities, and an
+//! *optional* periodic box. With no box (`periodic: None`) the physics are the
+//! exact all-pairs interactions used by the two-atom dimer; with a box they
+//! use minimum-image periodic boundaries and a cut-and-shifted potential at
+//! the cutoff. The physics (accelerations, total energy) are free functions
+//! over that state, built on `lj_energy` and `lj_force`.
 
 use crate::{lj_energy, lj_force};
 
 /// A 2D vector, used for both positions and velocities.
 pub type Vec2 = [f64; 2];
 
+/// Periodic simulation box: side `length` and interaction `cutoff`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct BoxConfig {
+    /// Box side length (reduced units of sigma).
+    pub length: f64,
+    /// Shifted interaction cutoff r_c.
+    pub cutoff: f64,
+}
+
 /// A set of equal-mass point atoms moving in the plane.
 ///
 /// Mass is 1 (reduced units), so force equals acceleration.
+#[derive(Clone, Debug)]
 pub struct System {
     /// Positions, one `[x, y]` entry per atom.
     pub positions: Vec<Vec2>,
     /// Velocities, one `[vx, vy]` entry per atom, parallel to `positions`.
     pub velocities: Vec<Vec2>,
+    /// `Some(box)` enables periodic, minimum-image interactions; `None` keeps
+    /// the exact all-pairs behaviour used by the two-atom dimer.
+    pub periodic: Option<BoxConfig>,
+}
+
+impl Default for System {
+    fn default() -> Self {
+        System {
+            positions: Vec::new(),
+            velocities: Vec::new(),
+            periodic: None,
+        }
+    }
 }
 
 impl System {
-    /// Build a system from parallel position and velocity lists.
+    /// Build a box-less system from parallel position and velocity lists.
     pub fn new(positions: Vec<Vec2>, velocities: Vec<Vec2>) -> Self {
         assert_eq!(
             positions.len(),
@@ -31,6 +57,21 @@ impl System {
         System {
             positions,
             velocities,
+            periodic: None,
+        }
+    }
+
+    /// Build a system with periodic boundary conditions from parallel lists.
+    pub fn with_box(positions: Vec<Vec2>, velocities: Vec<Vec2>, bc: BoxConfig) -> Self {
+        assert_eq!(
+            positions.len(),
+            velocities.len(),
+            "positions and velocities must have the same length"
+        );
+        System {
+            positions,
+            velocities,
+            periodic: Some(bc),
         }
     }
 
@@ -40,56 +81,87 @@ impl System {
     }
 }
 
-/// Squared distance between two position vectors.
-fn dist2(a: Vec2, b: Vec2) -> f64 {
-    let dx = a[0] - b[0];
-    let dy = a[1] - b[1];
-    dx * dx + dy * dy
-}
-
-/// Pairwise Lennard-Jones potential energy of the whole system
-/// (one `lj_energy` term per pair of atoms).
-fn potential_energy(system: &System) -> f64 {
-    let n = system.n_atoms();
-    let mut pe = 0.0;
-    for i in 0..n {
-        for j in (i + 1)..n {
-            pe += lj_energy(dist2(system.positions[i], system.positions[j]).sqrt());
-        }
-    }
-    pe
+/// Minimum-image displacement from `a` to `b` inside a periodic box of side
+/// `len`, wrapped into `(-len/2, len/2]`.
+fn displacement(a: Vec2, b: Vec2, len: f64) -> Vec2 {
+    let mut dx = b[0] - a[0];
+    let mut dy = b[1] - a[1];
+    dx -= len * (dx / len).round();
+    dy -= len * (dy / len).round();
+    [dx, dy]
 }
 
 /// Total energy `E = KE + U`: kinetic energy of all atoms plus the pairwise
 /// Lennard-Jones potential, in reduced units (m = 1, epsilon = 1).
+///
+/// With a periodic box the pair potential is cut-and-shifted at `r_c`:
+/// `V_shift(r) = V(r) - V(r_c)` for `r < r_c`, else 0. Without a box the
+/// exact `lj_energy` is used for every pair (the dimer behaviour).
 pub fn total_energy(system: &System) -> f64 {
     let ke: f64 = system
         .velocities
         .iter()
         .map(|v| 0.5 * (v[0] * v[0] + v[1] * v[1]))
         .sum();
-    ke + potential_energy(system)
+    let n = system.n_atoms();
+    let mut pe = 0.0;
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let r = match system.periodic {
+                Some(bc) => {
+                    let d = displacement(system.positions[i], system.positions[j], bc.length);
+                    (d[0] * d[0] + d[1] * d[1]).sqrt()
+                }
+                None => {
+                    let dx = system.positions[j][0] - system.positions[i][0];
+                    let dy = system.positions[j][1] - system.positions[i][1];
+                    (dx * dx + dy * dy).sqrt()
+                }
+            };
+            match system.periodic {
+                Some(bc) if r < bc.cutoff => pe += lj_energy(r) - lj_energy(bc.cutoff),
+                Some(_) => {}
+                None => pe += lj_energy(r),
+            }
+        }
+    }
+    ke + pe
 }
 
 /// Acceleration of every atom (equal to force, since m = 1), from the
 /// Lennard-Jones pair forces between all pairs.
 ///
 /// The LJ force magnitude `lj_force(r)` is positive when repulsive, so atom `j`
-/// is pushed away from atom `i` along the vector `positions[j] - positions[i]`,
-/// and atom `i` feels the equal and opposite push.
+/// is pushed away from atom `i` along the pair vector, and atom `i` feels the
+/// equal and opposite push. With a periodic box the pair vector is the
+/// minimum image and pairs beyond `r_c` are omitted.
 pub fn accelerations(system: &System) -> Vec<Vec2> {
     let n = system.n_atoms();
     let mut acc = vec![[0.0; 2]; n];
     for i in 0..n {
         for j in (i + 1)..n {
-            let dx = system.positions[j][0] - system.positions[i][0];
-            let dy = system.positions[j][1] - system.positions[i][1];
+            let (dx, dy) = match system.periodic {
+                Some(bc) => {
+                    let d = displacement(system.positions[i], system.positions[j], bc.length);
+                    (d[0], d[1])
+                }
+                None => (
+                    system.positions[j][0] - system.positions[i][0],
+                    system.positions[j][1] - system.positions[i][1],
+                ),
+            };
             let r = (dx * dx + dy * dy).sqrt();
-            let f = lj_force(r) / r; // force magnitude times the unit vector
-            acc[j][0] += f * dx;
-            acc[j][1] += f * dy;
-            acc[i][0] -= f * dx;
-            acc[i][1] -= f * dy;
+            let inside = match system.periodic {
+                Some(bc) => r > 0.0 && r < bc.cutoff,
+                None => r > 0.0,
+            };
+            if inside {
+                let f = lj_force(r) / r; // force magnitude times the unit vector
+                acc[j][0] += f * dx;
+                acc[j][1] += f * dy;
+                acc[i][0] -= f * dx;
+                acc[i][1] -= f * dy;
+            }
         }
     }
     acc

@@ -115,6 +115,7 @@ mod tests {
         let mut system = System {
             positions: vec![[0.0, 0.0]],
             velocities: vec![[1.0, -2.0]],
+            ..Default::default()
         };
         advance(&FreeFlight, &mut system, 0.5); // Use the shared driver.
         assert_eq!(system.positions[0], [0.5, -1.0]);
