@@ -25,9 +25,8 @@ pub fn lj_energy(r: f64) -> f64 {
 ///
 ///     F(r) = -V'(r) = 4 (12 r^-13 - 6 r^-7)
 ///
-/// Not yet implemented (see the failing force test).
-pub fn lj_force(_r: f64) -> f64 {
-    todo!("lj_force not yet implemented")
+pub fn lj_force(r: f64) -> f64 {
+    4.0 * (12.0 * r.powi(-13) - 6.0 * r.powi(-7))
 }
 
 #[cfg(test)]
