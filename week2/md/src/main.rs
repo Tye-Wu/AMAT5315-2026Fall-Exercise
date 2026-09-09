@@ -127,8 +127,25 @@ fn main() {
             cmd_check(&dir);
         }
         "video" => {
-            eprintln!("video subcommand not implemented yet");
-            std::process::exit(1);
+            let dir = argv
+                .get(1)
+                .map(PathBuf::from)
+                .unwrap_or_else(|| PathBuf::from("artifacts"));
+            let out = argv
+                .iter()
+                .position(|a| a == "--out")
+                .and_then(|p| argv.get(p + 1))
+                .cloned()
+                .unwrap_or_else(|| "fluid.mp4".to_string());
+            let script = format!(
+                "{}/scripts/render_video.py",
+                env!("CARGO_MANIFEST_DIR")
+            );
+            let status = std::process::Command::new("python3")
+                .args([&script, dir.to_str().unwrap(), &out])
+                .status()
+                .expect("failed to run python3 renderer");
+            std::process::exit(status.code().unwrap_or(1));
         }
         other if other.starts_with("--") => cmd_run(&argv),
         other => fail(&format!("unknown subcommand {other}")),
