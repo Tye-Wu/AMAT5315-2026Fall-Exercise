@@ -135,7 +135,9 @@ Rescale = multiply every velocity by α so ⟨v²⟩/2 → T after the 50-step b
 {"frame":0,"t":0.0,"x":[...100],"y":[...100],"vx":[...100],"vy":[...100],
  "K":...,"U":...,"E":...,"T":...}
 ```
-Frame 0 is the state at the start of production; 200 frames total by default.
+Each saved frame is a production snapshot sampled every `save_every` steps;
+the last saved frame is at the end of production (200 frames total by
+default).
 `K, U, E` are the stored energy fields for this snapshot.
 
 ### `run.json`

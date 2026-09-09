@@ -6,7 +6,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::fluid::{FrameData, RunRecord};
-use crate::system::{BoxConfig, System, Vec2};
+use crate::system::{BoxConfig, System};
 
 /// One saved frame, as written to `traj.jsonl` (one object per line).
 #[derive(Serialize, Deserialize, Debug, Clone)]
