@@ -8,6 +8,7 @@
 pub mod fluid;
 pub mod integrator;
 pub mod lattice;
+pub mod observables;
 pub mod rng;
 pub mod store;
 pub mod system;
