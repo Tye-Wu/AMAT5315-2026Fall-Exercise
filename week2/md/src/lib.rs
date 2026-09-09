@@ -9,6 +9,7 @@ pub mod fluid;
 pub mod integrator;
 pub mod lattice;
 pub mod rng;
+pub mod store;
 pub mod system;
 
 pub use integrator::{
