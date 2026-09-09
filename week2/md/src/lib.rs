@@ -5,6 +5,7 @@
 //! trait shared by `Euler` and `VelocityVerlet`, and `run_experiment` for the
 //! total-energy-error diagnostic.
 
+pub mod fluid;
 pub mod integrator;
 pub mod lattice;
 pub mod rng;
