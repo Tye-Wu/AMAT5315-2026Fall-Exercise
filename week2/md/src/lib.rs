@@ -6,12 +6,14 @@
 //! total-energy-error diagnostic.
 
 pub mod integrator;
+pub mod lattice;
 pub mod rng;
 pub mod system;
 
 pub use integrator::{
     advance, run_experiment, Euler, FreeFlight, Integrator, VelocityVerlet,
 };
+pub use lattice::triangular_lattice;
 pub use rng::SplitMix64;
 pub use system::{accelerations, total_energy, BoxConfig, System, Vec2};
 
