@@ -1,6 +1,82 @@
 //! Observables measured from a saved trajectory: speed-distribution fit and
 //! the secular energy drift.
 
+use crate::store::FrameRecord;
+
+/// Fit the pooled speed distribution of `frames` to the 2D Maxwell-Boltzmann
+/// `f(v) = (v/T) exp(-v^2/(2T))` and return `(T_fit, chi2/dof)`.
+pub fn fit_speed_temperature(frames: &[FrameRecord], bins: usize) -> (f64, f64) {
+    let mut speeds: Vec<f64> = Vec::new();
+    for f in frames {
+        for i in 0..f.vx.len() {
+            speeds.push((f.vx[i] * f.vx[i] + f.vy[i] * f.vy[i]).sqrt());
+        }
+    }
+    if speeds.is_empty() {
+        return (0.0, f64::INFINITY);
+    }
+    let vmax = speeds.iter().cloned().fold(0.0, f64::max) * 1.05;
+    let h = vmax / bins as f64;
+    let mut count = vec![0usize; bins];
+    for &v in &speeds {
+        let b = ((v / h) as usize).min(bins - 1);
+        count[b] += 1;
+    }
+    let total = speeds.len() as f64;
+
+    let mut best = (f64::INFINITY, 0.5);
+    let mut t = 0.10;
+    while t < 1.5 {
+        let mut chi2 = 0.0;
+        let mut dof = 0usize;
+        for b in 0..bins {
+            let vlo = b as f64 * h;
+            let vhi = vlo + h;
+            let expected = (mb_cdf(vhi, t) - mb_cdf(vlo, t)) * total;
+            if expected > 5.0 {
+                let diff = count[b] as f64 - expected;
+                chi2 += diff * diff / expected;
+                dof += 1;
+            }
+        }
+        let chi2_dof = chi2 / ((dof as f64) - 1.0).max(1.0);
+        if chi2_dof < best.0 {
+            best = (chi2_dof, t);
+        }
+        t += 0.002;
+    }
+    (best.1, best.0)
+}
+
+/// P(v <= v) for the 2D Maxwell-Boltzmann with per-component variance T:
+/// `1 - exp(-v^2 / (2T))`.
+fn mb_cdf(v: f64, t: f64) -> f64 {
+    if t <= 0.0 {
+        return 0.0;
+    }
+    1.0 - (-v * v / (2.0 * t)).exp()
+}
+
+/// Linear-trend drift of a per-atom energy series over time:
+/// `|slope| * (t_last - t_first)`, slope from ordinary least squares.
+pub fn secular_drift(t: &[f64], e: &[f64]) -> f64 {
+    let n = t.len().min(e.len());
+    if n < 2 {
+        return 0.0;
+    }
+    let nf = n as f64;
+    let mt = t[..n].iter().sum::<f64>() / nf;
+    let me = e[..n].iter().sum::<f64>() / nf;
+    let mut num = 0.0;
+    let mut den = 0.0;
+    for i in 0..n {
+        num += (t[i] - mt) * (e[i] - me);
+        den += (t[i] - mt) * (t[i] - mt);
+    }
+    let slope = if den > 0.0 { num / den } else { 0.0 };
+    (slope * (t[n - 1] - t[0])).abs()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
