@@ -14,6 +14,22 @@ skill turns course lesson sheets into guided, one-step-at-a-time study sessions.
 unit square, counts how many land within distance 1 of the origin, and returns
 four times that fraction. See `week1/SPEC.md` for the definition of "correct."
 
+**Week 2** is a Rust crate, `week2/md/`, with Lennard-Jones pair energy and
+force functions in reduced units (`lj_energy`, `lj_force`), each with a unit
+test. `week2/field.png` plots the pair field around one atom — energy as
+colors, force as arrows — generated from those functions by a cargo example.
+To run the Rust tests:
+
+```bash
+cargo test --manifest-path week2/md/Cargo.toml
+```
+
+To regenerate the field figure:
+
+```bash
+python3 week2/plot_field.py
+```
+
 ## Requirements
 
 - Python 3.10 or newer (`setup.txt` records the exact versions used)
