@@ -1,4 +1,17 @@
 //! Library for the `md` project.
+//!
+//! Lennard-Jones pair interactions in reduced units (`lj_energy`, `lj_force`)
+//! and a two-atom molecular-dynamics core: the `System` state, an `Integrator`
+//! trait shared by `Euler` and `VelocityVerlet`, and `run_experiment` for the
+//! total-energy-error diagnostic.
+
+pub mod integrator;
+pub mod system;
+
+pub use integrator::{
+    advance, run_experiment, Euler, FreeFlight, Integrator, VelocityVerlet,
+};
+pub use system::{accelerations, total_energy, System, Vec2};
 
 /// Returns the greeting printed by the binary.
 ///
