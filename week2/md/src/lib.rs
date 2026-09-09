@@ -6,12 +6,14 @@
 //! total-energy-error diagnostic.
 
 pub mod integrator;
+pub mod rng;
 pub mod system;
 
 pub use integrator::{
     advance, run_experiment, Euler, FreeFlight, Integrator, VelocityVerlet,
 };
-pub use system::{accelerations, total_energy, System, Vec2};
+pub use rng::SplitMix64;
+pub use system::{accelerations, total_energy, BoxConfig, System, Vec2};
 
 /// Returns the greeting printed by the binary.
 ///
