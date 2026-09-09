@@ -7,6 +7,29 @@ pub fn greeting() -> &'static str {
     "Hello, world!"
 }
 
+/// Lennard-Jones pair energy in reduced units.
+///
+/// `r` is the dimensionless separation in units of sigma; the returned value
+/// is the pair potential energy in units of epsilon:
+///
+///     V(r) = 4 (r^-12 - r^-6)
+pub fn lj_energy(r: f64) -> f64 {
+    4.0 * (r.powi(-12) - r.powi(-6))
+}
+
+/// Lennard-Jones pair force magnitude in reduced units.
+///
+/// `r` is the dimensionless separation in units of sigma; the returned value
+/// is the radial force magnitude in units of epsilon/sigma, positive when
+/// repulsive:
+///
+///     F(r) = -V'(r) = 4 (12 r^-13 - 6 r^-7)
+///
+/// Not yet implemented (see the failing force test).
+pub fn lj_force(_r: f64) -> f64 {
+    todo!("lj_force not yet implemented")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
