@@ -63,19 +63,33 @@ mod tests {
     }
 
     #[test]
-    fn lj_force_vanishes_at_equilibrium_and_is_repulsive_inside() {
-        let r_eq = 2f64.powf(1.0 / 6.0);
-        let f_eq = lj_force(r_eq);
-        assert!(
-            f_eq.abs() < 1e-9,
-            "expected F(2^(1/6)) = 0, got {f_eq}"
-        );
+    fn lj_force_matches_numerical_derivative_of_energy() {
+        // Check the force against the numerical derivative of the energy,
+        // the standard finite-difference identity (see "Testing a derivative"):
+        //     F(r) = -dE/dr  ≈  -(E(r + h) - E(r - h)) / (2 h).
+        //
+        // Chosen parameters (reduced units):
+        //   r0        = 2^(1/6)                  potential minimum
+        //   separations r = r0 +/- {0.05, 0.15, 0.30}   (straddle r0, so the
+        //                                              sign change of F is exercised)
+        //   step h    = 1e-7                     central-difference step
+        //   tolerance = 1e-6                     absolute, in units of epsilon/sigma
+        let r0 = 2f64.powf(1.0 / 6.0);
+        let offsets = [0.05, 0.15, 0.30];
+        let h = 1e-7;
+        let tol = 1e-6;
 
-        // At r = 1 (one sigma), F = 4(12 - 6) = 24 in units of epsilon/sigma.
-        let f_one = lj_force(1.0);
-        assert!(
-            (f_one - 24.0).abs() < 1e-9,
-            "expected F(1) = 24 (epsilon/sigma), got {f_one}"
-        );
+        for &delta in &offsets {
+            for r in [r0 - delta, r0 + delta] {
+                let d_energy_dr = (lj_energy(r + h) - lj_energy(r - h)) / (2.0 * h);
+                let f = lj_force(r);
+                let dev = (f + d_energy_dr).abs(); // F = -dE/dr
+                assert!(
+                    dev < tol,
+                    "at r = {r}: |lj_force + dE/dr| = {dev:.3e} exceeds {tol:.1e} \
+                     (lj_force = {f:.6}, dE/dr = {d_energy_dr:.6})"
+                );
+            }
+        }
     }
 }
