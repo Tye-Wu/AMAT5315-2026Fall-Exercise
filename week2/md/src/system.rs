@@ -133,4 +133,59 @@ mod tests {
         assert!((a[0][0] + a[1][0]).abs() < 1e-12); // momentum conserved
         assert!(a[0][1].abs() < 1e-12 && a[1][1].abs() < 1e-12);
     }
+
+    // --- Periodic box + shifted cutoff (Task 1) ---
+
+    fn box_cfg() -> BoxConfig {
+        BoxConfig { length: 10.0, cutoff: 2.5 }
+    }
+
+    #[test]
+    fn net_force_is_zero_under_periodic_boundaries() {
+        let mut pos = Vec::new();
+        for i in 0..12u32 {
+            let x = (f64::from(i) * 1.31).rem_euclid(10.0);
+            let y = (f64::from(i) * 0.77).rem_euclid(10.0);
+            pos.push([x, y]);
+        }
+        let vel = vec![[0.0; 2]; pos.len()];
+        let sys = System::with_box(pos, vel, box_cfg());
+        let a = accelerations(&sys);
+        let sx: f64 = a.iter().map(|v| v[0]).sum();
+        let sy: f64 = a.iter().map(|v| v[1]).sum();
+        assert!(sx.abs() < 1e-9 && sy.abs() < 1e-9, "net accel {sx} {sy}");
+    }
+
+    #[test]
+    fn potential_is_continuous_just_inside_cutoff() {
+        // Probe just inside rc: with the cut-and-shift the pair energy ~ 0 there.
+        let r = 2.5 - 1e-6;
+        let sys = System::with_box(
+            vec![[0.0, 0.0], [r, 0.0]],
+            vec![[0.0, 0.0], [0.0, 0.0]],
+            box_cfg(),
+        );
+        let e = total_energy(&sys); // KE = 0, so this is the pair energy
+        assert!(e.abs() < 1e-4, "energy at rc-1e-6 should be ~0 (shifted), got {e}");
+    }
+
+    #[test]
+    fn shifted_potential_matches_exact_far_below_cutoff() {
+        let sys = System::with_box(
+            vec![[0.0, 0.0], [1.2, 0.0]],
+            vec![[0.0, 0.0], [0.0, 0.0]],
+            box_cfg(),
+        );
+        let shifted = total_energy(&sys);
+        let exact = 4.0 * (1.2f64.powi(-12) - 1.2f64.powi(-6));
+        let shift = 4.0 * (2.5f64.powi(-12) - 2.5f64.powi(-6));
+        assert!((shifted - (exact - shift)).abs() < 1e-9);
+    }
+
+    #[test]
+    fn no_box_keeps_exact_two_body_energy() {
+        let sys = rest_pair(1.2);
+        let expected = 4.0 * (1.2f64.powi(-12) - 1.2f64.powi(-6));
+        assert!((total_energy(&sys) - expected).abs() < 1e-9);
+    }
 }
