@@ -1,5 +1,27 @@
 //! Deterministic initial configurations: a triangular lattice generator.
 
+use crate::system::Vec2;
+
+/// Generate a `rows` x `cols` triangular lattice wrapped into a periodic box of
+/// side `length`.
+///
+/// Row `iy` is offset by half a column spacing so neighbouring rows nest, the
+/// classic triangular (hexagonal) arrangement; every point is wrapped into
+/// `[0, length)^2` so it is a valid periodic-box configuration.
+pub fn triangular_lattice(rows: usize, cols: usize, length: f64) -> Vec<Vec2> {
+    let a = length / cols as f64; // column spacing, ~1.12 for the defaults
+    let dy = a * 0.866_025_403_784_438_6; // row spacing = a * sqrt(3)/2
+    let mut out = Vec::with_capacity(rows * cols);
+    for iy in 0..rows {
+        for ix in 0..cols {
+            let x = ((ix as f64 + 0.5 * (iy % 2) as f64) * a).rem_euclid(length);
+            let y = (iy as f64 * dy).rem_euclid(length);
+            out.push([x, y]);
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
