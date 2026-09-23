@@ -1,0 +1,16 @@
+[package]
+name = "week4"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[[example]]
+name = "line_study"
+path = "scripts/line_study.rs"
+
+[[example]]
+name = "derivative_compare"
+path = "scripts/derivative_compare.rs"
