@@ -4,7 +4,7 @@ title: Image Marmousi with five extra Treeverse checkpoints
 role: engine-runner
 role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#engine-runner
 skill: comp-chem-workflow
-status: proposed
+status: validated
 depends_on: [T005]
 approval: none
 inputs: []
@@ -14,17 +14,17 @@ cannot: [use full history, commit licensed input data, change the Marmousi model
 outputs_expected:
 - artifact_id: marmousi-image
   type: validation-report
-  path: artifacts/marmousi-image/result.json
+  path: artifacts/marmousi-validation.json
 - artifact_id: marmousi-figure
   type: figure
-  path: artifacts/marmousi.png
+  path: artifacts/marmousi-four-panel.png
 success_criteria:
 - checkpointed adjoint uses six total saved states and exactly 20,788,320 peak bytes
 - raw image L2 norm matches 6.7037741e-4 within relative error 1e-4
 - image displays dipping layers in the upper 3 km window with one raw amplitude scale across depth
 - model/license provenance is preserved while ignored input JSON and .npy arrays remain untracked
 knowledge_required: []
-required_refs: [/Users/abelwu/Documents/Codex/2026-09-09/xian/work/amat-week5/week5/skills/enzyme-setup/SKILL.md]
+required_refs: [/Users/abelwu/Documents/Codex/2026-09-09/xian/work/AMAT5315-2026Fall-Exercise/week5/skills/enzyme-setup/SKILL.md]
 required_checks: [cargo test --release]
 release_gates: []
 execution_policy:
@@ -33,7 +33,7 @@ execution_policy:
   requires_claim: true
   lease_ttl_minutes: 120
   heartbeat_interval_minutes: 10
-  owner_dir: artifacts/marmousi-image/
-  exclusive_paths: [artifacts/marmousi-born/, artifacts/marmousi-image/]
-assumptions: []
+  owner_dir: artifacts/marmousi-adjoint/
+  exclusive_paths: [artifacts/marmousi/, artifacts/marmousi-adjoint/]
+assumptions: ["Linux was reported as available, but a configured SSH alias/work directory was not provided; Enzyme execution was verified on native Apple Silicon instead."]
 provenance: [/Users/abelwu/Desktop/week5-learning-sheet.pdf, MARMOUSI-LICENSE]

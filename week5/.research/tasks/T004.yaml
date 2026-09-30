@@ -4,7 +4,7 @@ title: Add Enzyme JVP Born and full-history adjoint
 role: engine-runner
 role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#engine-runner
 skill: comp-chem-workflow
-status: proposed
+status: accepted
 depends_on: [T003]
 approval: none
 inputs: []
@@ -19,12 +19,12 @@ outputs_expected:
   type: figure
   path: artifacts/adjoint/image.png
 success_criteria:
-- Enzyme kernel is isolated in no_std static library and generated derivatives pass x86_64 Linux smoke tests
+- Enzyme kernel is isolated in no_std static library; pinned-nightly cube JVP/VJP smoke test passes on the recorded native host
 - Born data are composed from local timestep JVPs; adjoint is composed from local timestep VJPs
 - dot-product relative difference is below 1e-9 and reference squared norm is approximately 0.0348479
 - image row-norm peak is within one grid cell of row 21
 knowledge_required: []
-required_refs: [/Users/abelwu/Documents/Codex/2026-09-09/xian/work/amat-week5/week5/skills/enzyme-setup/SKILL.md]
+required_refs: [/Users/abelwu/Documents/Codex/2026-09-09/xian/work/AMAT5315-2026Fall-Exercise/week5/skills/enzyme-setup/SKILL.md]
 required_checks: [cargo test --release]
 release_gates: []
 execution_policy:

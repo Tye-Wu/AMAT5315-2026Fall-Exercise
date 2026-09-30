@@ -11,10 +11,10 @@
 | task | status | next |
 |---|---|---|
 | T001 | accepted | scope and contract recorded in PLAN.md |
-| T002 | proposed | JAX AD, graph, finite difference and scaling evidence |
-| T003 | proposed | acoustic forward simulation and echo evidence |
-| T004 | proposed | Enzyme Born and full-history adjoint |
-| T005 | proposed | Treeverse schedules and storage/recomputation curve |
-| T006 | proposed | six-state Marmousi migration |
-| T007 | proposed | critic review, README inventory and push |
-| T008 | proposed | student-owned Alibaba account preparation for Week 6 |
+| T002 | accepted | JAX AD, graph, finite difference and scaling evidence |
+| T003 | accepted | acoustic forward simulation and echo evidence |
+| T004 | accepted | Enzyme Born and full-history reflector adjoint |
+| T005 | validated | Treeverse schedules, action audits and storage/recomputation curves |
+| T006 | validated | six-state Marmousi migration and four-panel evidence |
+| T007 | validated | README and evidence inventory; remote push requires owner action |
+| T008 | user action | Alibaba account preparation only after instructor explains expected cost |

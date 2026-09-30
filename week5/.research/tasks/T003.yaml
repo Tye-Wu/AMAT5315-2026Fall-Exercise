@@ -4,7 +4,7 @@ title: Build and validate acoustic forward model and echo
 role: engine-runner
 role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#engine-runner
 skill: comp-chem-workflow
-status: proposed
+status: accepted
 depends_on: [T001]
 approval: none
 inputs: []
@@ -24,7 +24,10 @@ success_criteria:
 - step-150 echo field is isolated by subtracting background-only from perturbed runs and is about 2 percent of direct maximum
 knowledge_required: []
 required_refs: []
-required_checks: [cargo test, cargo run --release --bin seismic -- --experiment inputs/reflector.json --mode forward --every 3 --out artifacts/forward]
+required_checks:
+- cargo +stable test --no-default-features --manifest-path seismic/Cargo.toml
+- cargo +stable run --no-default-features --manifest-path seismic/Cargo.toml -- --experiment inputs/reflector.json --mode forward --every 3 --out artifacts/forward
+- uv run --project . python scripts/forward_figures.py
 release_gates: []
 execution_policy:
   mode: single_owner

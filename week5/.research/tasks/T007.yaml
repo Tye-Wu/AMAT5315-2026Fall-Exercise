@@ -1,10 +1,10 @@
 schema_version: 1
 id: T007
-title: Review evidence inventory and publish Week 5 package
+title: Review evidence inventory and prepare local Week 5 package
 role: synthesis-report
 role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#synthesis-report
 skill: comp-chem-workflow
-status: proposed
+status: validated
 depends_on: [T002, T003, T004, T005, T006]
 approval: none
 inputs: []
@@ -22,7 +22,8 @@ success_criteria:
 - every evidence file has a generating command beside it in README.md
 - all committed evidence files are below 5 MB
 - 'inputs/ and all .npy arrays are ignored; MARMOUSI-LICENSE is committed'
-- fresh clone reproduces required outputs and all automated acceptance checks pass
+- README documents commands and input hashes needed to regenerate the outputs; a fresh-clone rerun is not claimed
+- all automated acceptance checks pass; shared-remote push is reserved for the repository owner
 knowledge_required: []
 required_refs: []
 required_checks: [git status --short, cargo test --release]
@@ -30,5 +31,5 @@ release_gates: [visualization-evidence]
 execution_policy:
   mode: single_owner
   allow_parallel_subagents: false
-assumptions: []
+assumptions: ["The experiment JSON inputs are intentionally ignored by Git, so the user must stage the course-provided hash-matching files before reproducing from a fresh clone.", "Changes are validated locally and have not been pushed; shared-remote publication is left to the repository owner."]
 provenance: [/Users/abelwu/Desktop/week5-learning-sheet.pdf]

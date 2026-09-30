@@ -1,0 +1,22 @@
+{
+  "image_shape": [
+    269,
+    805
+  ],
+  "image_l2_norm": 0.0006703774060378304,
+  "expected_image_l2_norm": 0.00067037741,
+  "relative_norm_error": 5.910356627520542e-09,
+  "born_shape": [
+    9,
+    1200,
+    91
+  ],
+  "selected_shot_index": 4,
+  "selected_shot_x_km": 10.0,
+  "scheduler_forward_calls": 70956,
+  "reverse_calls": 10800,
+  "peak_saved_states": 6,
+  "peak_saved_bytes": 20788320,
+  "transpose_relative_error": 1.7290315767471726e-14,
+  "full_history_not_used": true
+}

@@ -1,0 +1,36 @@
+usage = "seismic --experiment inputs/reflector.json --mode forward --every 3 --out artifacts/forward"
+description = "Simulate acoustic waves and their derivatives; no unstated defaults."
+
+[args]
+experiment = "JSON model and survey: grid, time step, velocity grids, source and receiver coordinates, damping and unit scales."
+mode = "forward: pressure traces; born: Born scattered data; adjoint: migrated image"
+out = "Output directory"
+
+[writes]
+stdout = "A summary of the selected mode and its checks."
+"<out>/run.json" = "Input provenance and compact run configuration."
+"<out>/result.json" = "Mode, grid, time steps, survey and validation statistics."
+"<out>/traces.npy" = "Forward float64 pressures [shot, step, receiver]."
+"<out>/born_data.npy" = "Born float64 scattered data [shot, step, receiver]."
+"<out>/image.npy" = "Adjoint float64 velocity sensitivity [z, x]."
+
+[args.recording]
+every = "Forward/adjoint recording interval in steps; frame at step zero is the initial field."
+
+[writes.recording]
+"<out>/wavefield.npy" = "Float32 frames [frame, z, x], forward increasing in time or adjoint decreasing in time."
+"<out>/echo.npy" = "Forward first-shot perturbed wavefield minus background wavefield at the recorded frames."
+
+[args.reverse]
+data = "born_data.npy of a born run: receiver weights to back-propagate."
+
+[writes.reverse]
+"<out>/result.json statistics" = "Storage mode, checkpoint budget, VJP calls, scheduler forward calls and saved-state counts/bytes."
+
+[args.checkpoint]
+storage = "How adjoint keeps states: full (default) or treeverse."
+checkpoints = "Treeverse only: saved-state slots beyond the initial state."
+
+[writes.checkpoint]
+"<out>/actions-<shot>.json" = "Per-action schedule entries: action, step n, and saved_states after the action."
+"<out>/result.json per_shot" = "Per-shot reverse/replay calls, peak states, and action filename."

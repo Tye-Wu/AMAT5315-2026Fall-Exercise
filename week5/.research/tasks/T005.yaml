@@ -4,7 +4,7 @@ title: Implement Treeverse schedule and validate checkpoint work
 role: engine-runner
 role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#engine-runner
 skill: comp-chem-workflow
-status: proposed
+status: validated
 depends_on: [T004]
 approval: none
 inputs: []
@@ -14,7 +14,7 @@ cannot: [run full-history Marmousi]
 outputs_expected:
 - artifact_id: treeverse-results
   type: validation-report
-  path: artifacts/checkpoint-work.png
+  path: artifacts/checkpoint-audit.json
 - artifact_id: treeverse-schedule-figure
   type: figure
   path: artifacts/checkpoint-actions.png
@@ -24,7 +24,7 @@ success_criteria:
 - image relative L2 errors against full history are below 1e-9
 - scheduler work counts match the sheet reference and full history retains 241 states
 knowledge_required: []
-required_refs: [/Users/abelwu/Documents/Codex/2026-09-09/xian/work/amat-week5/week5/skills/enzyme-setup/SKILL.md]
+required_refs: [/Users/abelwu/Documents/Codex/2026-09-09/xian/work/AMAT5315-2026Fall-Exercise/week5/skills/enzyme-setup/SKILL.md]
 required_checks: [cargo test --release]
 release_gates: []
 execution_policy:

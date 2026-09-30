@@ -1,0 +1,184 @@
+{
+  "full_history_states": 241,
+  "full_history_saved_bytes": 6481936,
+  "full_history_transpose_relative_error": 1.5929558687344158e-15,
+  "budgets": [
+    {
+      "extra_slots": 1,
+      "peak_saved_states": 2,
+      "peak_saved_bytes": 53792,
+      "scheduler_forward_calls_per_shot": 28680,
+      "reverse_calls_per_shot": 240,
+      "image_relative_l2_error_vs_full_history": 0.0,
+      "transpose_relative_error": 1.5929558687344158e-15,
+      "per_shot_audits": [
+        {
+          "actions_file": "actions-0.json",
+          "calls": 28680,
+          "grad_steps": 240,
+          "peak_saved_states": 2,
+          "invalid_restore": 0,
+          "duplicate_store": 0,
+          "bad_call": 0,
+          "bad_fetch": 0,
+          "budget_overrun": 0
+        },
+        {
+          "actions_file": "actions-1.json",
+          "calls": 28680,
+          "grad_steps": 240,
+          "peak_saved_states": 2,
+          "invalid_restore": 0,
+          "duplicate_store": 0,
+          "bad_call": 0,
+          "bad_fetch": 0,
+          "budget_overrun": 0
+        },
+        {
+          "actions_file": "actions-2.json",
+          "calls": 28680,
+          "grad_steps": 240,
+          "peak_saved_states": 2,
+          "invalid_restore": 0,
+          "duplicate_store": 0,
+          "bad_call": 0,
+          "bad_fetch": 0,
+          "budget_overrun": 0
+        }
+      ]
+    },
+    {
+      "extra_slots": 3,
+      "peak_saved_states": 4,
+      "peak_saved_bytes": 107584,
+      "scheduler_forward_calls_per_shot": 1695,
+      "reverse_calls_per_shot": 240,
+      "image_relative_l2_error_vs_full_history": 0.0,
+      "transpose_relative_error": 1.5929558687344158e-15,
+      "per_shot_audits": [
+        {
+          "actions_file": "actions-0.json",
+          "calls": 1695,
+          "grad_steps": 240,
+          "peak_saved_states": 4,
+          "invalid_restore": 0,
+          "duplicate_store": 0,
+          "bad_call": 0,
+          "bad_fetch": 0,
+          "budget_overrun": 0
+        },
+        {
+          "actions_file": "actions-1.json",
+          "calls": 1695,
+          "grad_steps": 240,
+          "peak_saved_states": 4,
+          "invalid_restore": 0,
+          "duplicate_store": 0,
+          "bad_call": 0,
+          "bad_fetch": 0,
+          "budget_overrun": 0
+        },
+        {
+          "actions_file": "actions-2.json",
+          "calls": 1695,
+          "grad_steps": 240,
+          "peak_saved_states": 4,
+          "invalid_restore": 0,
+          "duplicate_store": 0,
+          "bad_call": 0,
+          "bad_fetch": 0,
+          "budget_overrun": 0
+        }
+      ]
+    },
+    {
+      "extra_slots": 5,
+      "peak_saved_states": 6,
+      "peak_saved_bytes": 161376,
+      "scheduler_forward_calls_per_shot": 990,
+      "reverse_calls_per_shot": 240,
+      "image_relative_l2_error_vs_full_history": 0.0,
+      "transpose_relative_error": 1.5929558687344158e-15,
+      "per_shot_audits": [
+        {
+          "actions_file": "actions-0.json",
+          "calls": 990,
+          "grad_steps": 240,
+          "peak_saved_states": 6,
+          "invalid_restore": 0,
+          "duplicate_store": 0,
+          "bad_call": 0,
+          "bad_fetch": 0,
+          "budget_overrun": 0
+        },
+        {
+          "actions_file": "actions-1.json",
+          "calls": 990,
+          "grad_steps": 240,
+          "peak_saved_states": 6,
+          "invalid_restore": 0,
+          "duplicate_store": 0,
+          "bad_call": 0,
+          "bad_fetch": 0,
+          "budget_overrun": 0
+        },
+        {
+          "actions_file": "actions-2.json",
+          "calls": 990,
+          "grad_steps": 240,
+          "peak_saved_states": 6,
+          "invalid_restore": 0,
+          "duplicate_store": 0,
+          "bad_call": 0,
+          "bad_fetch": 0,
+          "budget_overrun": 0
+        }
+      ]
+    },
+    {
+      "extra_slots": 10,
+      "peak_saved_states": 11,
+      "peak_saved_bytes": 295856,
+      "scheduler_forward_calls_per_shot": 642,
+      "reverse_calls_per_shot": 240,
+      "image_relative_l2_error_vs_full_history": 0.0,
+      "transpose_relative_error": 1.5929558687344158e-15,
+      "per_shot_audits": [
+        {
+          "actions_file": "actions-0.json",
+          "calls": 642,
+          "grad_steps": 240,
+          "peak_saved_states": 11,
+          "invalid_restore": 0,
+          "duplicate_store": 0,
+          "bad_call": 0,
+          "bad_fetch": 0,
+          "budget_overrun": 0
+        },
+        {
+          "actions_file": "actions-1.json",
+          "calls": 642,
+          "grad_steps": 240,
+          "peak_saved_states": 11,
+          "invalid_restore": 0,
+          "duplicate_store": 0,
+          "bad_call": 0,
+          "bad_fetch": 0,
+          "budget_overrun": 0
+        },
+        {
+          "actions_file": "actions-2.json",
+          "calls": 642,
+          "grad_steps": 240,
+          "peak_saved_states": 11,
+          "invalid_restore": 0,
+          "duplicate_store": 0,
+          "bad_call": 0,
+          "bad_fetch": 0,
+          "budget_overrun": 0
+        }
+      ]
+    }
+  ],
+  "overall": "PASS"
+}
