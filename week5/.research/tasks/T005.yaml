@@ -1,0 +1,39 @@
+schema_version: 1
+id: T005
+title: Implement Treeverse schedule and validate checkpoint work
+role: engine-runner
+role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#engine-runner
+skill: comp-chem-workflow
+status: proposed
+depends_on: [T004]
+approval: none
+inputs: []
+can_read: [PLAN.md, skills/enzyme-setup/SKILL.md]
+can_write: [source-code, validation-report, figure]
+cannot: [run full-history Marmousi]
+outputs_expected:
+- artifact_id: treeverse-results
+  type: validation-report
+  path: artifacts/checkpoint-work.png
+- artifact_id: treeverse-schedule-figure
+  type: figure
+  path: artifacts/checkpoint-actions.png
+success_criteria:
+- budgets 1, 3, 5, and 10 have peak saved states 2, 4, 6, and 11
+- every action schedule reverses steps 239 through 0 exactly once in descending order; invalid restore and budget audit counts are zero
+- image relative L2 errors against full history are below 1e-9
+- scheduler work counts match the sheet reference and full history retains 241 states
+knowledge_required: []
+required_refs: [/Users/abelwu/Documents/Codex/2026-09-09/xian/work/amat-week5/week5/skills/enzyme-setup/SKILL.md]
+required_checks: [cargo test --release]
+release_gates: []
+execution_policy:
+  mode: single_owner
+  allow_parallel_subagents: false
+  requires_claim: true
+  lease_ttl_minutes: 90
+  heartbeat_interval_minutes: 10
+  owner_dir: artifacts/checkpoint-5/
+  exclusive_paths: [artifacts/checkpoint-1/, artifacts/checkpoint-3/, artifacts/checkpoint-5/, artifacts/checkpoint-10/]
+assumptions: []
+provenance: [/Users/abelwu/Desktop/week5-learning-sheet.pdf]

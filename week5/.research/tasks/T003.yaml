@@ -1,0 +1,38 @@
+schema_version: 1
+id: T003
+title: Build and validate acoustic forward model and echo
+role: engine-runner
+role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#engine-runner
+skill: comp-chem-workflow
+status: proposed
+depends_on: [T001]
+approval: none
+inputs: []
+can_read: [PLAN.md, inputs/reflector.json]
+can_write: [source-code, figure, validation-report]
+cannot: [change the assignment's boundary condition, source, or receiver geometry]
+outputs_expected:
+- artifact_id: acoustic-forward
+  type: validation-report
+  path: artifacts/forward/result.json
+- artifact_id: acoustic-figures
+  type: figure
+  path: artifacts/inputs.png
+success_criteria:
+- trace L2 norm and per-shot maximum amplitudes agree with references to relative error below 1e-4
+- boundary, sponge and source update match equations 8 and 9 in the sheet
+- step-150 echo field is isolated by subtracting background-only from perturbed runs and is about 2 percent of direct maximum
+knowledge_required: []
+required_refs: []
+required_checks: [cargo test, cargo run --release --bin seismic -- --experiment inputs/reflector.json --mode forward --every 3 --out artifacts/forward]
+release_gates: []
+execution_policy:
+  mode: single_owner
+  allow_parallel_subagents: false
+  requires_claim: true
+  lease_ttl_minutes: 60
+  heartbeat_interval_minutes: 10
+  owner_dir: artifacts/forward/
+  exclusive_paths: [artifacts/forward/]
+assumptions: []
+provenance: [/Users/abelwu/Desktop/week5-learning-sheet.pdf]

@@ -1,0 +1,61 @@
+{
+  "seed": 2026,
+  "spacing": 1.122462048309373,
+  "runs": [
+    {
+      "atoms": 64,
+      "inputs": 192,
+      "energy_seconds": 3.704201662912965e-05,
+      "forward_gradient_seconds": 0.014084083028137684,
+      "reverse_gradient_seconds": 4.120805533602834e-05,
+      "forward_over_energy": 380.2191216841589,
+      "reverse_over_energy": 1.112467923887884,
+      "forward_over_reverse": 341.7798513734746,
+      "largest_relative_gradient_error": 2.341122559727996e-15
+    },
+    {
+      "atoms": 128,
+      "inputs": 384,
+      "energy_seconds": 6.11250288784504e-05,
+      "forward_gradient_seconds": 0.061416540993377566,
+      "reverse_gradient_seconds": 0.00011299998732283711,
+      "forward_over_energy": 1004.7691121014741,
+      "reverse_over_energy": 1.84866967584657,
+      "forward_over_reverse": 543.5092733056032,
+      "largest_relative_gradient_error": 2.054782487874095e-15
+    },
+    {
+      "atoms": 256,
+      "inputs": 768,
+      "energy_seconds": 0.0001564159756526351,
+      "forward_gradient_seconds": 0.23385462502483279,
+      "reverse_gradient_seconds": 0.00032579200342297554,
+      "forward_over_energy": 1495.081458585609,
+      "reverse_over_energy": 2.082856319909973,
+      "forward_over_reverse": 717.8034530246572,
+      "largest_relative_gradient_error": 9.839140982256448e-16
+    },
+    {
+      "atoms": 512,
+      "inputs": 1536,
+      "energy_seconds": 0.0004206660087220371,
+      "forward_gradient_seconds": 1.1896130419918336,
+      "reverse_gradient_seconds": 0.0011489169555716217,
+      "forward_over_energy": 2827.927660725002,
+      "reverse_over_energy": 2.7311856241058687,
+      "forward_over_reverse": 1035.42126019018,
+      "largest_relative_gradient_error": 1.2500674441260887e-15
+    },
+    {
+      "atoms": 1024,
+      "inputs": 3072,
+      "energy_seconds": 0.0012940000160597265,
+      "forward_gradient_seconds": 10.45047662500292,
+      "reverse_gradient_seconds": 0.0056342079769819975,
+      "forward_over_energy": 8076.102392042446,
+      "reverse_over_energy": 4.354101937446917,
+      "forward_over_reverse": 1854.8262094152922,
+      "largest_relative_gradient_error": 1.6657411592051297e-15
+    }
+  ]
+}

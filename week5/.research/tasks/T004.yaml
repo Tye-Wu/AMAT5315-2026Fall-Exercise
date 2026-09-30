@@ -1,0 +1,39 @@
+schema_version: 1
+id: T004
+title: Add Enzyme JVP Born and full-history adjoint
+role: engine-runner
+role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#engine-runner
+skill: comp-chem-workflow
+status: proposed
+depends_on: [T003]
+approval: none
+inputs: []
+can_read: [PLAN.md, skills/enzyme-setup/SKILL.md, inputs/reflector.json]
+can_write: [source-code, validation-report, figure]
+cannot: [replace Enzyme derivatives with handwritten tangents or adjoints]
+outputs_expected:
+- artifact_id: born-adjoint
+  type: validation-report
+  path: artifacts/adjoint/result.json
+- artifact_id: reflector-image
+  type: figure
+  path: artifacts/adjoint/image.png
+success_criteria:
+- Enzyme kernel is isolated in no_std static library and generated derivatives pass x86_64 Linux smoke tests
+- Born data are composed from local timestep JVPs; adjoint is composed from local timestep VJPs
+- dot-product relative difference is below 1e-9 and reference squared norm is approximately 0.0348479
+- image row-norm peak is within one grid cell of row 21
+knowledge_required: []
+required_refs: [/Users/abelwu/Documents/Codex/2026-09-09/xian/work/amat-week5/week5/skills/enzyme-setup/SKILL.md]
+required_checks: [cargo test --release]
+release_gates: []
+execution_policy:
+  mode: single_owner
+  allow_parallel_subagents: false
+  requires_claim: true
+  lease_ttl_minutes: 90
+  heartbeat_interval_minutes: 10
+  owner_dir: artifacts/adjoint/
+  exclusive_paths: [artifacts/born/, artifacts/adjoint/]
+assumptions: []
+provenance: [/Users/abelwu/Desktop/week5-learning-sheet.pdf]

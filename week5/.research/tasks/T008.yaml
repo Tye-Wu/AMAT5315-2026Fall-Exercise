@@ -1,0 +1,29 @@
+schema_version: 1
+id: T008
+title: Student account preparation for Week 6
+role: synthesis-report
+role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#synthesis-report
+skill: comp-chem-workflow
+status: proposed
+depends_on: [T001]
+approval: user_account_or_payment_setup
+inputs: []
+can_read: [PLAN.md]
+can_write: [handoff-note]
+cannot: [create account, submit identity or payment details, rent GPU]
+outputs_expected:
+- artifact_id: week6-account-handoff
+  type: handoff-note
+  path: WEEK6-PREPARATION.md
+success_criteria:
+- explain that the student must begin Alibaba Cloud international account signup after the instructor explains expected costs
+- no GPU machine is rented before Week 6 training code is ready
+knowledge_required: []
+required_refs: []
+required_checks: []
+release_gates: []
+execution_policy:
+  mode: single_owner
+  allow_parallel_subagents: false
+assumptions: []
+provenance: [/Users/abelwu/Desktop/week5-learning-sheet.pdf]

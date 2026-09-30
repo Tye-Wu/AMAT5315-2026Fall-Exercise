@@ -1,0 +1,38 @@
+schema_version: 1
+id: T001
+title: Extract Week 5 contract, stages, and boundaries
+role: research-orchestrator
+role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#research-orchestrator
+skill: comp-chem-workflow
+status: accepted
+depends_on: []
+approval: none
+inputs: []
+can_read: []
+can_write:
+- artifact_type: task-plan
+- artifact_type: decision-record
+cannot:
+- submit HPC jobs
+- invent scientific parameters
+outputs_expected:
+- artifact_id: initial-task-plan
+  type: task-plan
+  path: PLAN.md
+success_criteria:
+- all Parts 1-4 outputs and numeric checks are mapped to files and commands
+- ignored inputs, excluded NumPy arrays, and the Marmousi license rule are explicit
+- Enzyme x86_64 Linux requirement and user-owned cloud setup boundary are explicit
+knowledge_required: []
+required_refs:
+- /Users/abelwu/.codex/skills/comp-chem-workflow/SKILL.md
+- /Users/abelwu/.codex/skills/research-orchestrator/SKILL.md
+required_checks: []
+release_gates: []
+execution_policy:
+  mode: single_owner
+  allow_parallel_subagents: false
+assumptions: []
+provenance:
+- /Users/abelwu/Desktop/week5-learning-sheet.pdf
+- skills/enzyme-setup/SKILL.md

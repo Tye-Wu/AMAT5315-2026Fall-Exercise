@@ -8,3 +8,9 @@ target/
 # Week-2 MD simulation generated data
 week2/artifacts/
 week4/artifacts/
+
+# Week 5 local experiment inputs and generated arrays
+week5/inputs/
+week5/artifacts/**/*.npy
+week5/.venv/
+week5/seismic/target/

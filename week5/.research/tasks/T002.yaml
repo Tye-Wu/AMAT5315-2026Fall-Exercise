@@ -1,0 +1,34 @@
+schema_version: 1
+id: T002
+title: Implement and validate JAX pair-energy differentiation and scaling
+role: engine-runner
+role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#engine-runner
+skill: comp-chem-workflow
+status: accepted
+depends_on: [T001]
+approval: none
+inputs: []
+can_read: [PLAN.md, skills/enzyme-setup/SKILL.md]
+can_write: [source-code, figure, validation-report]
+cannot: [submit HPC jobs, change the stated LJ model or sample sizes]
+outputs_expected:
+- artifact_id: jax-derivatives
+  type: validation-report
+  path: artifacts/ad/derivatives.json
+- artifact_id: jax-figures
+  type: figure
+  path: artifacts/ad/
+success_criteria:
+- hand forward and reverse node passes and jax.grad match required values within 1e-12
+- both AD modes have maximum error below 1e-12 and finite differences are less accurate overall
+- jaxpr operation graphs include the shared-value add_any node in the gradient graph
+- cluster gradient scaling covers 64 through 1024 atoms and forward/reverse ratio exceeds 100 at P=3072
+knowledge_required: []
+required_refs: []
+required_checks: [uv run python scripts/ad.py, uv run python scripts/cluster_scaling.py]
+release_gates: []
+execution_policy:
+  mode: single_owner
+  allow_parallel_subagents: false
+assumptions: []
+provenance: [/Users/abelwu/Desktop/week5-learning-sheet.pdf]

@@ -1,0 +1,22 @@
+schema_version: 1
+project_id: amat5315-week5-2026fall
+title: 'AMAT5315 Week 5: Automatic differentiation and checkpointing'
+mode: semi-automatic
+created_at: '2026-09-30T19:13:54+08:00'
+objective: Implement, validate, document, and publish the Week 5 JAX/Enzyme seismic
+  simulation and Treeverse checkpointing exercise against its learning sheet.
+success_criteria:
+- hand-written JAX forward/reverse derivatives, finite-difference comparison, graph visualizations, and cluster gradient scaling pass every numeric check in the sheet
+- acoustic forward traces and recording match the answer key amplitudes and echo behavior
+- Enzyme Born and adjoint passes satisfy the transpose identity and image-depth criterion
+- Treeverse schedules satisfy reverse-coverage, slot-budget, reference work, and image-equivalence checks
+- Marmousi six-state run reproduces the raw image norm and displays the expected dipping layers
+- committed source, license, and all non-array evidence are documented in README.md; inputs and .npy arrays remain out of Git
+- user-owned cloud account enrollment/payment verification is clearly handed off for Week 6 preparation
+default_policy:
+  approval_required_for:
+  - expensive_hpc_submission
+  - scientific_model_choice
+  - overwrite_existing_data
+  - promote_claim_to_report
+  - user_account_or_payment_setup

@@ -1,0 +1,34 @@
+schema_version: 1
+id: T007
+title: Review evidence inventory and publish Week 5 package
+role: synthesis-report
+role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#synthesis-report
+skill: comp-chem-workflow
+status: proposed
+depends_on: [T002, T003, T004, T005, T006]
+approval: none
+inputs: []
+can_read: [README.md, artifacts/, src/, scripts/]
+can_write: [critic-report, validation-report]
+cannot: [promote failed or unverified metrics]
+outputs_expected:
+- artifact_id: week5-readme
+  type: validation-report
+  path: README.md
+- artifact_id: final-review
+  type: validation-report
+  path: REVIEW.md
+success_criteria:
+- every evidence file has a generating command beside it in README.md
+- all committed evidence files are below 5 MB
+- 'inputs/ and all .npy arrays are ignored; MARMOUSI-LICENSE is committed'
+- fresh clone reproduces required outputs and all automated acceptance checks pass
+knowledge_required: []
+required_refs: []
+required_checks: [git status --short, cargo test --release]
+release_gates: [visualization-evidence]
+execution_policy:
+  mode: single_owner
+  allow_parallel_subagents: false
+assumptions: []
+provenance: [/Users/abelwu/Desktop/week5-learning-sheet.pdf]

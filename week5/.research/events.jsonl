@@ -1,0 +1,4 @@
+{"event_id":"E001","task_id":"T001","event":"validation_passed","created_at":"2026-09-30T20:00:00+08:00","evidence":["PLAN.md","skills/enzyme-setup/SKILL.md","inputs/reflector.json schema","inputs/marmousi.json schema"]}
+{"event_id":"E002","task_id":"T001","event":"status_changed","from":"proposed","to":"accepted","created_at":"2026-09-30T20:00:00+08:00","evidence":["PLAN.md"]}
+{"event_id":"E003","task_id":"T002","event":"validation_passed","created_at":"2026-09-30T21:00:00+08:00","evidence":["artifacts/ad/derivatives.json","artifacts/ad/modes.png","artifacts/ad/graph.png","artifacts/ad/grad-graph.png","artifacts/ad/scaling.json","artifacts/ad/scaling.png"],"summary":"All numerical and graph-structure acceptance criteria passed on local macOS/JAX CPU."}
+{"event_id":"E004","task_id":"T002","event":"status_changed","from":"proposed","to":"accepted","created_at":"2026-09-30T21:00:00+08:00","evidence":["artifacts/ad/derivatives.json","artifacts/ad/scaling.json"]}
