@@ -138,7 +138,11 @@ The heating run stores 400 atoms and 200 frames. The first and last saved speed 
 
 ## Pages
 
-The public viewer is served from `docs/` and contains the 400-atom heating trajectory above. Its final URL is recorded here after the publication gate.
+The public viewer is served from `docs/` and contains the 400-atom heating trajectory above:
+
+<https://tye-wu.github.io/AMAT5315-2026Fall-Exercise/>
+
+It was verified without repository authentication: the page auto-loaded 400 atoms and 200 frames, and its final frame reported step 20000, `T = 1.197`, and long-range RDF contrast `0.097`.
 
 ## Recording
 
