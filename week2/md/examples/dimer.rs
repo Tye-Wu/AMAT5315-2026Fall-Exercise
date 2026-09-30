@@ -1,7 +1,7 @@
 //! Run the two-atom LJ dimer experiment and print the energy error over time.
 //!
 //! Writes CSV to stdout with one row per step: `run,t,dE`, where
-//! `dE = E(t) - E(0)` is the total-energy error in reduced units (epsilon).
+//! `dE = (E(t) - E(0)) / |E(0)|` is the relative total-energy error.
 //! The three cases share the same initial state and time step:
 //!
 //!   run        steps   integrator
@@ -19,18 +19,13 @@
 //! `week2/plot_dimer.py` runs this example and draws the two-panel figure
 //! `week2/dimer.png`.
 
-use md::{run_experiment, Euler, System, VelocityVerlet};
+use md::{Euler, System, VelocityVerlet, run_experiment};
 
 fn main() {
     let dt = 0.01;
 
     // Two atoms at rest, 1.2 sigma apart (outside r0), straddling the origin.
-    let initial = || {
-        System::new(
-            vec![[-0.6, 0.0], [0.6, 0.0]],
-            vec![[0.0, 0.0], [0.0, 0.0]],
-        )
-    };
+    let initial = || System::new(vec![[-0.6, 0.0], [0.6, 0.0]], vec![[0.0, 0.0], [0.0, 0.0]]);
 
     let euler500 = run_experiment(&Euler, &mut initial(), dt, 500);
     let verlet500 = run_experiment(&VelocityVerlet, &mut initial(), dt, 500);

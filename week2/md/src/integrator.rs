@@ -4,10 +4,10 @@
 //! and a step `dt`; `advance` is the generic driver that works with any of
 //! them, and `run_experiment` steps a state for many steps while recording the
 //! total-energy error. Integrators are zero-sized so `&self` suffices — the
-//! velocity-Verlet method recomputes the acceleration at both ends of a step
-//! rather than storing state between calls.
+//! velocity-Verlet caches the new acceleration so every step after the first
+//! needs one new force evaluation.
 
-use crate::system::{accelerations, total_energy, System};
+use crate::system::{System, accelerations, total_energy};
 
 /// Any object that can advance a `System` by one time step of length `dt`.
 pub trait Integrator {
@@ -28,6 +28,8 @@ impl Integrator for FreeFlight {
             x[0] += dt * v[0];
             x[1] += dt * v[1];
         }
+        system.wrap_positions();
+        system.acceleration_cache = None;
     }
 }
 
@@ -47,11 +49,13 @@ impl Integrator for Euler {
                 system.positions[i][c] += dt * system.velocities[i][c];
             }
         }
+        system.wrap_positions();
         for i in 0..n {
             for c in 0..2 {
                 system.velocities[i][c] += dt * a[i][c];
             }
         }
+        system.acceleration_cache = None;
     }
 }
 
@@ -64,26 +68,30 @@ pub struct VelocityVerlet;
 
 impl Integrator for VelocityVerlet {
     fn step(&self, system: &mut System, dt: f64) {
-        let a0 = accelerations(system);
-        let dt2 = dt * dt;
+        let a0 = system
+            .acceleration_cache
+            .take()
+            .unwrap_or_else(|| accelerations(system));
         let n = system.n_atoms();
         for i in 0..n {
             for c in 0..2 {
-                system.positions[i][c] +=
-                    dt * system.velocities[i][c] + 0.5 * a0[i][c] * dt2;
+                system.velocities[i][c] += 0.5 * dt * a0[i][c];
+                system.positions[i][c] += dt * system.velocities[i][c];
             }
         }
+        system.wrap_positions();
         let a1 = accelerations(system);
         for i in 0..n {
             for c in 0..2 {
-                system.velocities[i][c] += 0.5 * (a0[i][c] + a1[i][c]) * dt;
+                system.velocities[i][c] += 0.5 * dt * a1[i][c];
             }
         }
+        system.acceleration_cache = Some(a1);
     }
 }
 
 /// Step a system for `steps` time steps of length `dt` with the given
-/// integrator, recording `(t, E(t) - E(0))` after every step.
+/// integrator, recording `(t, (E(t) - E(0)) / |E(0)|)` after every step.
 ///
 /// `E(0)` is the total energy of the initial state, so the first returned
 /// entry is always `(0.0, 0.0)`.
@@ -99,7 +107,7 @@ pub fn run_experiment(
     for k in 1..=steps {
         advance(method, system, dt);
         let t = k as f64 * dt;
-        out.push((t, total_energy(system) - e0));
+        out.push((t, (total_energy(system) - e0) / e0.abs()));
     }
     out
 }
@@ -125,10 +133,7 @@ mod tests {
     /// The dimer experiment: two atoms, m = 1, released from rest at
     /// separation r = 1.2 (E0 = U(1.2)), dt = 0.01.
     fn dimer_initial() -> System {
-        System::new(
-            vec![[-0.6, 0.0], [0.6, 0.0]],
-            vec![[0.0, 0.0], [0.0, 0.0]],
-        )
+        System::new(vec![[-0.6, 0.0], [0.6, 0.0]], vec![[0.0, 0.0], [0.0, 0.0]])
     }
 
     fn max_abs(errors: &[(f64, f64)]) -> f64 {

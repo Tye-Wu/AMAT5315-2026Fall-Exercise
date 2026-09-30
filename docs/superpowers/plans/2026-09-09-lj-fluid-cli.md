@@ -1,5 +1,7 @@
 # LJ-Fluid CLI (`md`) Implementation Plan
 
+> Archived early plan. Do not use its old defaults or interfaces for reproduction. The completed, assignment-aligned verification plan is [`2026-09-30-week2-parts3-5-plan.md`](2026-09-30-week2-parts3-5-plan.md). This file is retained only as planning provenance.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Turn the `md` crate into a CLI that simulates a 2D Lennard-Jones fluid, saves a trajectory, checks its physics, and renders a motion + g(r) video.

@@ -1,132 +1,89 @@
-//! JSON persistence: writes/reads `run.json` and `traj.jsonl` for a run.
+//! JSON persistence for the exact Week 2 run contract.
 
 use std::fs;
+use std::io::{self, BufWriter, Write};
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use crate::fluid::{FrameData, RunRecord};
-use crate::system::{BoxConfig, System};
+use crate::fluid::RunRecord;
+use crate::system::Vec2;
 
-/// One saved frame, as written to `traj.jsonl` (one object per line).
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FrameRecord {
-    pub frame: usize,
+    pub step: usize,
     pub t: f64,
-    pub x: Vec<f64>,
-    pub y: Vec<f64>,
-    pub vx: Vec<f64>,
-    pub vy: Vec<f64>,
-    pub k: f64,
-    pub u: f64,
-    pub e: f64,
-    pub tkin: f64,
+    pub pos: Vec<Vec2>,
+    pub vel: Vec<Vec2>,
+    #[serde(rename = "E_pot")]
+    pub e_pot: f64,
+    #[serde(rename = "E_kin")]
+    pub e_kin: f64,
 }
 
-/// Run metadata plus per-frame histories, as written to `run.json`.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RunJson {
-    pub atoms: usize,
+    pub n: usize,
     pub rho: f64,
-    pub temperature: f64,
-    pub seed: u64,
-    pub dt: f64,
-    pub cutoff: f64,
     #[serde(rename = "box")]
-    pub box_len: f64,
-    pub eq: usize,
+    pub box_lengths: Vec2,
+    pub dt: f64,
+    pub temperature: f64,
+    pub eq_steps: usize,
     pub steps: usize,
-    pub save_every: usize,
-    pub frames: usize,
-    pub e0: f64,
-    pub history: History,
+    pub sample_every: usize,
+    pub seed: u64,
+    pub integrator: String,
+    pub cutoff: f64,
+    pub force: String,
+    pub ramp_to: Option<f64>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct History {
-    pub t: Vec<f64>,
-    pub k: Vec<f64>,
-    pub u: Vec<f64>,
-    pub e: Vec<f64>,
-    pub tkin: Vec<f64>,
-}
-
-fn frame_record(frame: usize, f: &FrameData, box_cfg: BoxConfig) -> FrameRecord {
-    let sys = System::with_box(f.positions.clone(), f.velocities.clone(), box_cfg);
-    let e = crate::system::total_energy(&sys);
-    let ke: f64 = f.velocities.iter().map(|v| 0.5 * (v[0] * v[0] + v[1] * v[1])).sum();
-    let n = f.positions.len() as f64;
-    FrameRecord {
-        frame,
-        t: f.t,
-        x: f.positions.iter().map(|p| p[0]).collect(),
-        y: f.positions.iter().map(|p| p[1]).collect(),
-        vx: f.velocities.iter().map(|v| v[0]).collect(),
-        vy: f.velocities.iter().map(|v| v[1]).collect(),
-        k: ke,
-        u: e - ke,
-        e,
-        tkin: ke / n,
-    }
-}
-
-/// Write `run.json` and `traj.jsonl` for a run into `dir` (created if missing).
-pub fn write_output(dir: &Path, rec: &RunRecord) -> std::io::Result<()> {
+pub fn write_output(dir: &Path, record: &RunRecord) -> io::Result<()> {
     fs::create_dir_all(dir)?;
-    let box_cfg = BoxConfig {
-        length: rec.box_len,
-        cutoff: rec.cfg.cutoff,
-    };
-    let frames: Vec<FrameRecord> = rec
-        .frames
-        .iter()
-        .enumerate()
-        .map(|(i, f)| frame_record(i, f, box_cfg))
-        .collect();
-
     let run = RunJson {
-        atoms: rec.cfg.atoms,
-        rho: rec.cfg.rho,
-        temperature: rec.cfg.temperature,
-        seed: rec.cfg.seed,
-        dt: rec.cfg.dt,
-        cutoff: rec.cfg.cutoff,
-        box_len: rec.box_len,
-        eq: rec.cfg.eq,
-        steps: rec.cfg.steps,
-        save_every: rec.cfg.save_every,
-        frames: frames.len(),
-        e0: rec.e0,
-        history: History {
-            t: frames.iter().map(|f| f.t).collect(),
-            k: frames.iter().map(|f| f.k).collect(),
-            u: frames.iter().map(|f| f.u).collect(),
-            e: frames.iter().map(|f| f.e).collect(),
-            tkin: frames.iter().map(|f| f.tkin).collect(),
-        },
+        n: record.cfg.n,
+        rho: record.cfg.rho,
+        box_lengths: record.box_lengths,
+        dt: record.cfg.dt,
+        temperature: record.cfg.temperature,
+        eq_steps: record.cfg.eq_steps,
+        steps: record.cfg.steps,
+        sample_every: record.cfg.sample_every,
+        seed: record.cfg.seed,
+        integrator: "velocity-verlet".to_string(),
+        cutoff: record.cfg.cutoff,
+        force: record.cfg.force_method.as_str().to_string(),
+        ramp_to: record.cfg.ramp_to,
     };
     fs::write(
         dir.join("run.json"),
-        serde_json::to_string_pretty(&run).unwrap(),
+        serde_json::to_string_pretty(&run).expect("serialize run metadata"),
     )?;
 
-    let mut lines = String::new();
-    for f in &frames {
-        lines.push_str(&serde_json::to_string(f).unwrap());
-        lines.push('\n');
+    let mut trajectory = BufWriter::new(fs::File::create(dir.join("traj.jsonl"))?);
+    for frame in &record.frames {
+        let stored = FrameRecord {
+            step: frame.step,
+            t: frame.t,
+            pos: frame.positions.clone(),
+            vel: frame.velocities.clone(),
+            e_pot: frame.e_pot,
+            e_kin: frame.e_kin,
+        };
+        serde_json::to_writer(&mut trajectory, &stored)?;
+        trajectory.write_all(b"\n")?;
     }
-    fs::write(dir.join("traj.jsonl"), lines)?;
+    trajectory.flush()?;
     Ok(())
 }
 
-/// Read a run written by [`write_output`]: `(RunJson, Vec<FrameRecord>)`.
-pub fn read_run(dir: &Path) -> std::io::Result<(RunJson, Vec<FrameRecord>)> {
-    let run: RunJson = serde_json::from_str(&fs::read_to_string(dir.join("run.json"))?)?;
-    let traj = fs::read_to_string(dir.join("traj.jsonl"))?;
+pub fn read_run(dir: &Path) -> io::Result<(RunJson, Vec<FrameRecord>)> {
+    let run = serde_json::from_str(&fs::read_to_string(dir.join("run.json"))?)?;
     let mut frames = Vec::new();
-    for line in traj.lines() {
+    for line in fs::read_to_string(dir.join("traj.jsonl"))?.lines() {
         if !line.trim().is_empty() {
-            frames.push(serde_json::from_str::<FrameRecord>(line)?);
+            frames.push(serde_json::from_str(line)?);
         }
     }
     Ok((run, frames))
@@ -135,32 +92,37 @@ pub fn read_run(dir: &Path) -> std::io::Result<(RunJson, Vec<FrameRecord>)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fluid::{run_fluid, RunConfig};
+    use crate::fluid::{RunConfig, run_fluid};
 
     #[test]
-    fn write_then_read_roundtrip() {
+    fn output_roundtrip_uses_required_fields() {
         let dir = std::env::temp_dir().join(format!("md_store_{}", std::process::id()));
-        let c = RunConfig {
-            atoms: 36,
-            rho: 0.8,
-            eq: 50,
+        let cfg = RunConfig {
+            n: 36,
+            eq_steps: 50,
             steps: 100,
-            save_every: 25,
+            sample_every: 25,
             ..RunConfig::default()
         };
-        let rec = run_fluid(&c);
-        write_output(&dir, &rec).unwrap();
-        assert!(dir.join("run.json").exists());
-        assert!(dir.join("traj.jsonl").exists());
-
-        let (meta, frames) = read_run(&dir).unwrap();
-        assert_eq!(frames.len(), rec.frames.len());
-        assert_eq!(meta.atoms, 36);
-        // Stored energies are finite and the file lines parse to full frames.
-        for f in &frames {
-            assert_eq!(f.x.len(), 36);
-            assert!(f.e.is_finite());
+        write_output(&dir, &run_fluid(&cfg)).unwrap();
+        let raw = fs::read_to_string(dir.join("run.json")).unwrap();
+        for key in [
+            "\"n\"",
+            "\"rho\"",
+            "\"box\"",
+            "\"eq_steps\"",
+            "\"sample_every\"",
+            "\"integrator\"",
+            "\"ramp_to\"",
+        ] {
+            assert!(raw.contains(key), "missing {key}");
         }
-        let _ = std::fs::remove_dir_all(&dir);
+        let (meta, frames) = read_run(&dir).unwrap();
+        assert_eq!(meta.n, 36);
+        assert_eq!(meta.integrator, "velocity-verlet");
+        assert_eq!(frames.len(), 4);
+        assert_eq!(frames[0].pos.len(), 36);
+        assert!(frames[0].e_pot.is_finite() && frames[0].e_kin.is_finite());
+        let _ = fs::remove_dir_all(dir);
     }
 }

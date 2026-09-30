@@ -5,7 +5,7 @@ Two panels from data computed by the md crate (week2/md, example
 `dimer`), which runs the two-atom Lennard-Jones simulation through the
 shared Integrator trait:
 
-  left  : energy error E(t)-E(0) for Euler and velocity-Verlet,
+  left  : relative energy error (E(t)-E(0))/|E(0)| for Euler and velocity-Verlet,
           both 500 steps at dt = 0.01 (Verlet stays below 1e-3;
           Euler drifts past 0.5).
   right : velocity-Verlet alone for 5000 steps, error scaled by 1000
@@ -99,7 +99,7 @@ def main():
     ax1.set_title("Euler vs velocity-Verlet, 500 steps (dt = 0.01)",
                   fontsize=11)
     ax1.set_xlabel("time $t$ (reduced units)")
-    ax1.set_ylabel("energy error $E(t) - E(0)$  (units of $\\varepsilon$)")
+    ax1.set_ylabel("relative energy error $(E(t)-E(0))/|E(0)|$")
     ax1.legend(frameon=False, fontsize=9)
     style_axes(ax1)
 
@@ -109,14 +109,14 @@ def main():
     ax2.set_title("velocity-Verlet, 5000 steps (dt = 0.01)",
                   fontsize=11)
     ax2.set_xlabel("time $t$ (reduced units)")
-    ax2.set_ylabel("$1000 \\times [E(t) - E(0)]$  (units of $\\varepsilon$)")
+    ax2.set_ylabel("$1000 \\times (E(t)-E(0))/|E(0)|$")
     ax2.set_ylim(-1.5, 1.5)
     style_axes(ax2)
 
     fig.suptitle(
-        "Two-atom LJ dimer: total-energy error $E(t)-E(0)$ over time\n"
+        "Two-atom LJ dimer: relative total-energy error over time\n"
         "both start from rest at $r=1.2\\,\\sigma$, so $E(0)=U(1.2)$; "
-        "shaded band $=\\pm10^{-3}\\,\\varepsilon$",
+        "shaded band $=\\pm10^{-3}$",
         fontsize=11,
     )
     fig.text(

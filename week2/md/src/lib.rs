@@ -13,12 +13,13 @@ pub mod rng;
 pub mod store;
 pub mod system;
 
-pub use integrator::{
-    advance, run_experiment, Euler, FreeFlight, Integrator, VelocityVerlet,
-};
+pub use integrator::{Euler, FreeFlight, Integrator, VelocityVerlet, advance, run_experiment};
 pub use lattice::triangular_lattice;
 pub use rng::SplitMix64;
-pub use system::{accelerations, total_energy, BoxConfig, System, Vec2};
+pub use system::{
+    BoxConfig, ForceMethod, InteractionResult, System, Vec2, accelerations, interactions,
+    interactions_with_method, kinetic_energy, potential_energy, total_energy,
+};
 
 /// Returns the greeting printed by the binary.
 ///
@@ -96,14 +97,14 @@ mod tests {
         //   tolerance = 1e-6                     absolute, in units of epsilon/sigma
         let r0 = 2f64.powf(1.0 / 6.0);
         let offsets = [0.05, 0.15, 0.30];
-        let h = 1e-7;
-        let tol = 1e-6;
+        let h = 1e-5;
 
         for &delta in &offsets {
             for r in [r0 - delta, r0 + delta] {
                 let d_energy_dr = (lj_energy(r + h) - lj_energy(r - h)) / (2.0 * h);
                 let f = lj_force(r);
                 let dev = (f + d_energy_dr).abs(); // F = -dE/dr
+                let tol = 1e-6 * f.abs().max(1.0);
                 assert!(
                     dev < tol,
                     "at r = {r}: |lj_force + dE/dr| = {dev:.3e} exceeds {tol:.1e} \

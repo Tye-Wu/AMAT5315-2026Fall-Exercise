@@ -1,128 +1,163 @@
-//! Observables measured from a saved trajectory: speed-distribution fit and
-//! the secular energy drift.
+//! Independent checks recomputed from saved positions and velocities.
 
-use crate::store::FrameRecord;
+use crate::store::{FrameRecord, RunJson};
+use crate::system::{BoxConfig, ForceMethod, System, interactions_with_method, kinetic_energy};
 
-/// Fit the pooled speed distribution of `frames` to the 2D Maxwell-Boltzmann
-/// `f(v) = (v/T) exp(-v^2/(2T))` and return `(T_fit, chi2/dof)`.
-pub fn fit_speed_temperature(frames: &[FrameRecord], bins: usize) -> (f64, f64) {
-    let mut speeds: Vec<f64> = Vec::new();
-    for f in frames {
-        for i in 0..f.vx.len() {
-            speeds.push((f.vx[i] * f.vx[i] + f.vy[i] * f.vy[i]).sqrt());
-        }
-    }
-    if speeds.is_empty() {
-        return (0.0, f64::INFINITY);
-    }
-    let vmax = speeds.iter().cloned().fold(0.0, f64::max) * 1.05;
-    let h = vmax / bins as f64;
-    let mut count = vec![0usize; bins];
-    for &v in &speeds {
-        let b = ((v / h) as usize).min(bins - 1);
-        count[b] += 1;
-    }
-    let total = speeds.len() as f64;
-
-    let mut best = (f64::INFINITY, 0.5);
-    let mut t = 0.10;
-    while t < 1.5 {
-        let mut chi2 = 0.0;
-        let mut dof = 0usize;
-        for b in 0..bins {
-            let vlo = b as f64 * h;
-            let vhi = vlo + h;
-            let expected = (mb_cdf(vhi, t) - mb_cdf(vlo, t)) * total;
-            if expected > 5.0 {
-                let diff = count[b] as f64 - expected;
-                chi2 += diff * diff / expected;
-                dof += 1;
-            }
-        }
-        let chi2_dof = chi2 / ((dof as f64) - 1.0).max(1.0);
-        if chi2_dof < best.0 {
-            best = (chi2_dof, t);
-        }
-        t += 0.002;
-    }
-    (best.1, best.0)
+#[derive(Clone, Debug)]
+pub struct CheckReport {
+    pub secular_drift: f64,
+    pub t_speed: f64,
+    pub chi2_per_22: f64,
+    pub stored_energy_max_error: f64,
 }
 
-/// P(v <= v) for the 2D Maxwell-Boltzmann with per-component variance T:
-/// `1 - exp(-v^2 / (2T))`.
-fn mb_cdf(v: f64, t: f64) -> f64 {
-    if t <= 0.0 {
-        return 0.0;
+impl CheckReport {
+    pub fn passes(&self, target_temperature: f64) -> bool {
+        self.secular_drift < 2e-3
+            && (self.t_speed - target_temperature).abs() < 0.05
+            && self.chi2_per_22 < 2.0
+            && self.stored_energy_max_error < 1e-8
     }
-    1.0 - (-v * v / (2.0 * t)).exp()
 }
 
-/// Linear-trend drift of a per-atom energy series over time:
-/// `|slope| * (t_last - t_first)`, slope from ordinary least squares.
-pub fn secular_drift(t: &[f64], e: &[f64]) -> f64 {
-    let n = t.len().min(e.len());
-    if n < 2 {
-        return 0.0;
+pub fn speed_temperature(frames: &[FrameRecord]) -> f64 {
+    let mut sum_v2 = 0.0;
+    let mut count = 0usize;
+    for frame in frames {
+        for v in &frame.vel {
+            sum_v2 += v[0] * v[0] + v[1] * v[1];
+            count += 1;
+        }
     }
-    let nf = n as f64;
-    let mt = t[..n].iter().sum::<f64>() / nf;
-    let me = e[..n].iter().sum::<f64>() / nf;
-    let mut num = 0.0;
-    let mut den = 0.0;
-    for i in 0..n {
-        num += (t[i] - mt) * (e[i] - me);
-        den += (t[i] - mt) * (t[i] - mt);
+    sum_v2 / (2.0 * count as f64)
+}
+
+/// The sheet's 24 equal-probability bins at the measured speed temperature.
+pub fn speed_shape_chi2_per_22(frames: &[FrameRecord], t_speed: f64) -> f64 {
+    let mut counts = [0usize; 24];
+    let mut total = 0usize;
+    for frame in frames {
+        for v in &frame.vel {
+            let v2 = v[0] * v[0] + v[1] * v[1];
+            let cdf = 1.0 - (-v2 / (2.0 * t_speed)).exp();
+            let bin = ((24.0 * cdf).floor() as usize).min(23);
+            counts[bin] += 1;
+            total += 1;
+        }
     }
-    let slope = if den > 0.0 { num / den } else { 0.0 };
-    (slope * (t[n - 1] - t[0])).abs()
+    let expected = total as f64 / 24.0;
+    let chi2: f64 = counts
+        .iter()
+        .map(|&observed| {
+            let difference = observed as f64 - expected;
+            difference * difference / expected
+        })
+        .sum();
+    chi2 / 22.0
+}
+
+pub fn windowed_secular_drift(energies: &[f64]) -> f64 {
+    let k = (energies.len() / 10).max(1);
+    let first = energies[..k].iter().sum::<f64>() / k as f64;
+    let last = energies[energies.len() - k..].iter().sum::<f64>() / k as f64;
+    (last - first).abs() / energies[0].abs()
+}
+
+pub fn evaluate_saved_run(meta: &RunJson, frames: &[FrameRecord]) -> Result<CheckReport, String> {
+    if frames.is_empty() {
+        return Err("trajectory contains no frames".to_string());
+    }
+    if frames.len() != meta.steps / meta.sample_every {
+        return Err(format!(
+            "expected {} frames, found {}",
+            meta.steps / meta.sample_every,
+            frames.len()
+        ));
+    }
+    let bc = BoxConfig {
+        lengths: meta.box_lengths,
+        cutoff: meta.cutoff,
+    };
+    let mut energies = Vec::with_capacity(frames.len());
+    let mut max_stored_error = 0.0_f64;
+    for frame in frames {
+        if frame.pos.len() != meta.n || frame.vel.len() != meta.n {
+            return Err(format!("frame {} has the wrong atom count", frame.step));
+        }
+        let expected_t = frame.step as f64 * meta.dt;
+        if (frame.t - expected_t).abs() > 1e-10 {
+            return Err(format!("frame {} has inconsistent time", frame.step));
+        }
+        if frame.pos.iter().any(|p| {
+            !p[0].is_finite()
+                || !p[1].is_finite()
+                || !(0.0..meta.box_lengths[0]).contains(&p[0])
+                || !(0.0..meta.box_lengths[1]).contains(&p[1])
+        }) || frame.vel.iter().flatten().any(|x| !x.is_finite())
+        {
+            return Err(format!("frame {} contains malformed state", frame.step));
+        }
+        let system = System::with_box_and_force(
+            frame.pos.clone(),
+            frame.vel.clone(),
+            bc,
+            ForceMethod::Naive,
+        );
+        let recomputed_potential =
+            interactions_with_method(&system, ForceMethod::Naive).potential_energy;
+        let recomputed_kinetic = kinetic_energy(&system);
+        let total = recomputed_potential + recomputed_kinetic;
+        let stored = frame.e_pot + frame.e_kin;
+        max_stored_error = max_stored_error.max((stored - total).abs() / total.abs().max(1.0));
+        energies.push(total);
+    }
+    let t_speed = speed_temperature(frames);
+    Ok(CheckReport {
+        secular_drift: windowed_secular_drift(&energies),
+        t_speed,
+        chi2_per_22: speed_shape_chi2_per_22(frames, t_speed),
+        stored_energy_max_error: max_stored_error,
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::rng::SplitMix64;
-    use crate::store::FrameRecord;
 
-    fn synth_frame(vx: Vec<f64>, vy: Vec<f64>) -> FrameRecord {
-        let n = vx.len();
-        let k: f64 = vx.iter().zip(&vy).map(|(a, b)| 0.5 * (a * a + b * b)).sum();
+    fn synthetic_frame(vel: Vec<[f64; 2]>) -> FrameRecord {
         FrameRecord {
-            frame: 0,
-            t: 0.0,
-            x: (0..n).map(|i| i as f64 * 0.1).collect(),
-            y: vec![0.0; n],
-            vx,
-            vy,
-            k,
-            u: 0.0,
-            e: k,
-            tkin: k / n as f64,
+            step: 1,
+            t: 0.01,
+            pos: vec![[0.0, 0.0]; vel.len()],
+            vel,
+            e_pot: 0.0,
+            e_kin: 0.0,
         }
     }
 
     #[test]
-    fn speed_fit_recovers_temperature_of_maxwell_speeds() {
-        // 2D Maxwell-Boltzmann at T = 0.5: Gaussian components, var per axis T.
+    fn measured_temperature_and_equal_probability_shape_recover_gaussian_sample() {
         let mut rng = SplitMix64::new(11);
-        let n = 4000;
-        let s = 0.5f64.sqrt();
-        let mut vx = Vec::with_capacity(n);
-        let mut vy = Vec::with_capacity(n);
-        for _ in 0..n {
-            vx.push(rng.gaussian() * s);
-            vy.push(rng.gaussian() * s);
-        }
-        let frames = vec![synth_frame(vx, vy)];
-        let (t_fit, chi2) = fit_speed_temperature(&frames, 40);
-        assert!((t_fit - 0.5).abs() < 0.05, "T_fit {t_fit}");
-        assert!(chi2 < 3.0, "chi2/dof {chi2}");
+        let velocities = (0..24_000)
+            .map(|_| {
+                [
+                    0.5_f64.sqrt() * rng.gaussian(),
+                    0.5_f64.sqrt() * rng.gaussian(),
+                ]
+            })
+            .collect();
+        let frames = vec![synthetic_frame(velocities)];
+        let temperature = speed_temperature(&frames);
+        let shape = speed_shape_chi2_per_22(&frames, temperature);
+        assert!((temperature - 0.5).abs() < 0.02, "{temperature}");
+        assert!(shape < 2.0, "{shape}");
     }
 
     #[test]
-    fn secular_drift_measures_slope_over_time() {
-        let t = vec![0.0, 1.0, 2.0, 3.0];
-        let e = vec![0.0, 0.001, 0.002, 0.003]; // per-atom energy rising 1e-3 per t
-        let d = secular_drift(&t, &e);
-        assert!((d - 0.003).abs() < 1e-6, "drift {d}");
+    fn drift_uses_first_and_last_ten_percent_means() {
+        let energies: Vec<f64> = (0..20).map(|i| 100.0 + i as f64 * 0.01).collect();
+        let expected = ((100.185_f64) - 100.005).abs() / 100.0;
+        assert!((windowed_secular_drift(&energies) - expected).abs() < 1e-12);
     }
 }

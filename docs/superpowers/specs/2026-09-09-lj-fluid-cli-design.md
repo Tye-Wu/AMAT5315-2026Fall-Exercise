@@ -1,5 +1,7 @@
 # Design: `md` — Lennard-Jones fluid CLI
 
+> Archived early draft. Its defaults and square-box data format do not describe the submitted implementation. Use the exact, assignment-aligned design in [`2026-09-30-week2-parts3-5-design.md`](2026-09-30-week2-parts3-5-design.md). This file is retained only as planning provenance.
+
 Date: 2026-09-09
 Scope: `week2/md/` (the `md` crate)
 Status: approved design, pre-plan

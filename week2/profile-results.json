@@ -1,0 +1,20 @@
+{
+  "naive": {
+    "samples": 155,
+    "elapsed_s": 0.15421558299999993,
+    "share_percent": {
+      "forces": 97.41935483870968,
+      "write trajectory": 1.2903225806451613,
+      "everything else": 1.2903225806451613
+    }
+  },
+  "cells": {
+    "samples": 146,
+    "elapsed_s": 0.14520991600000002,
+    "share_percent": {
+      "forces": 95.89041095890411,
+      "write trajectory": 0.684931506849315,
+      "everything else": 3.4246575342465753
+    }
+  }
+}

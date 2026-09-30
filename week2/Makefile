@@ -13,4 +13,4 @@ ARTIFACTS := artifacts
 
 reproduce:
 	mkdir -p $(ARTIFACTS)
-	cargo run --quiet --release --manifest-path md/Cargo.toml -- run --dir $(ARTIFACTS)
+	cargo run --quiet --release --manifest-path md/Cargo.toml -- run --out $(ARTIFACTS)

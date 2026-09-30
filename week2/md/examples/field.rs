@@ -31,11 +31,7 @@ fn main() {
 
             let (v, fx, fy) = if r > 0.0 {
                 // Radial unit vector (x / r, y / r) times the force magnitude.
-                (
-                    lj_energy(r),
-                    lj_force(r) * (x / r),
-                    lj_force(r) * (y / r),
-                )
+                (lj_energy(r), lj_force(r) * (x / r), lj_force(r) * (y / r))
             } else {
                 // Exact centre: separation zero is a singularity; mark it so
                 // the plotter can mask the core.

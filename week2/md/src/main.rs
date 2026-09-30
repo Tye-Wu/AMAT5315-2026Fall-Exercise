@@ -1,153 +1,160 @@
-//! CLI for the `md` crate: simulate a 2D Lennard-Jones fluid and save it,
-//! check the physics of a saved trajectory, and render a motion video.
-//!
-//! Subcommands (with `--dir`, default `artifacts/`):
-//! - (no subcommand, or `run`) run the simulation, writing `run.json` +
-//!   `traj.jsonl`;
-//! - `check <dir>` — print the three acceptance metrics and PASS/FAIL;
-//! - `video <dir> --out fluid.mp4` — render atoms + g(r) to an mp4.
+//! `md run`, `md check`, and `md video` for the Week 2 LJ fluid.
 
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use md::fluid::{run_fluid, RunConfig};
-use md::observables::{fit_speed_temperature, secular_drift};
-use md::store::{self, FrameRecord};
-use md::system::{total_energy, BoxConfig, System, Vec2};
+use md::ForceMethod;
+use md::fluid::{RunConfig, run_fluid};
+use md::observables::evaluate_saved_run;
+use md::store;
 
-fn fail(msg: &str) -> ! {
-    eprintln!("{msg}");
+fn fail(message: impl std::fmt::Display) -> ! {
+    eprintln!("{message}");
     std::process::exit(2);
 }
 
-fn val<'a>(args: &'a [String], i: usize, flag: &str) -> &'a str {
-    args.get(i + 1)
+fn value<'a>(args: &'a [String], index: usize, flag: &str) -> &'a str {
+    args.get(index + 1)
         .map(String::as_str)
-        .unwrap_or_else(|| fail(&format!("{flag} needs a value")))
+        .unwrap_or_else(|| fail(format!("{flag} requires a value")))
 }
 
-fn parse_usize(args: &[String], i: usize, flag: &str) -> usize {
-    val(args, i, flag)
+fn parse_usize(args: &[String], index: usize, flag: &str) -> usize {
+    value(args, index, flag)
         .parse()
-        .unwrap_or_else(|_| fail(&format!("{flag} must be an integer")))
+        .unwrap_or_else(|_| fail(format!("{flag} must be a non-negative integer")))
 }
 
-fn parse_u64(args: &[String], i: usize, flag: &str) -> u64 {
-    val(args, i, flag)
+fn parse_u64(args: &[String], index: usize, flag: &str) -> u64 {
+    value(args, index, flag)
         .parse()
-        .unwrap_or_else(|_| fail(&format!("{flag} must be an integer")))
+        .unwrap_or_else(|_| fail(format!("{flag} must be a non-negative integer")))
 }
 
-fn parse_f64(args: &[String], i: usize, flag: &str) -> f64 {
-    val(args, i, flag)
+fn parse_f64(args: &[String], index: usize, flag: &str) -> f64 {
+    value(args, index, flag)
         .parse()
-        .unwrap_or_else(|_| fail(&format!("{flag} must be a number")))
+        .unwrap_or_else(|_| fail(format!("{flag} must be a number")))
 }
 
-/// Parse `md` run flags into a `RunConfig` and an output directory.
 fn parse_run(args: &[String]) -> (RunConfig, PathBuf) {
-    let mut c = RunConfig::default();
-    let mut dir = PathBuf::from("artifacts");
-    let mut i = 0;
-    while i < args.len() {
-        match args[i].as_str() {
-            "--atoms" => c.atoms = parse_usize(args, i, "--atoms"),
-            "--rho" => c.rho = parse_f64(args, i, "--rho"),
-            "--temperature" => c.temperature = parse_f64(args, i, "--temperature"),
-            "--seed" => c.seed = parse_u64(args, i, "--seed"),
-            "--dt" => c.dt = parse_f64(args, i, "--dt"),
-            "--cutoff" => c.cutoff = parse_f64(args, i, "--cutoff"),
-            "--eq" => c.eq = parse_usize(args, i, "--eq"),
-            "--steps" => c.steps = parse_usize(args, i, "--steps"),
-            "--save-every" => c.save_every = parse_usize(args, i, "--save-every"),
-            "--dir" => dir = PathBuf::from(val(args, i, "--dir")),
-            other => fail(&format!("unknown flag {other}")),
+    let mut config = RunConfig::default();
+    let mut output = PathBuf::from("artifacts");
+    let mut index = 0usize;
+    while index < args.len() {
+        let flag = args[index].as_str();
+        match flag {
+            "--n" | "--atoms" => config.n = parse_usize(args, index, flag),
+            "--rho" => config.rho = parse_f64(args, index, flag),
+            "--temperature" => config.temperature = parse_f64(args, index, flag),
+            "--dt" => config.dt = parse_f64(args, index, flag),
+            "--eq-steps" | "--eq" => config.eq_steps = parse_usize(args, index, flag),
+            "--steps" => config.steps = parse_usize(args, index, flag),
+            "--sample-every" | "--save-every" => {
+                config.sample_every = parse_usize(args, index, flag)
+            }
+            "--seed" => config.seed = parse_u64(args, index, flag),
+            "--cutoff" => config.cutoff = parse_f64(args, index, flag),
+            "--force" => {
+                config.force_method = ForceMethod::parse(value(args, index, flag))
+                    .unwrap_or_else(|| fail("--force must be naive or cells"))
+            }
+            "--ramp-to" => config.ramp_to = Some(parse_f64(args, index, flag)),
+            "--out" | "--dir" => output = PathBuf::from(value(args, index, flag)),
+            "--help" | "-h" => print_help_and_exit(),
+            _ => fail(format!("unknown run flag {flag}")),
         }
-        i += 2;
+        index += 2;
     }
-    (c, dir)
+    if config.sample_every == 0 || config.steps % config.sample_every != 0 {
+        fail("--sample-every must be positive and divide --steps exactly");
+    }
+    (config, output)
+}
+
+fn print_help_and_exit() -> ! {
+    println!(
+        "md run [--n 100] [--rho 0.8] [--temperature 0.5] [--dt 0.01] \\\n         [--eq-steps 2000] [--steps 10000] [--sample-every 50] [--seed 2026] \\\n         [--force cells|naive] [--ramp-to T] [--out artifacts]\n\
+         md check [artifacts]\n\
+         md video [artifacts] --out fluid.mp4"
+    );
+    std::process::exit(0)
 }
 
 fn cmd_run(args: &[String]) {
-    let (cfg, dir) = parse_run(args);
-    let rec = run_fluid(&cfg);
-    store::write_output(&dir, &rec).expect("write outputs");
+    let (config, output) = parse_run(args);
+    let record = run_fluid(&config);
+    store::write_output(&output, &record).unwrap_or_else(|error| fail(error));
     println!(
-        "wrote {} frames (box {:.5}) to {}",
-        rec.frames.len(),
-        rec.box_len,
-        dir.display()
+        "wrote {} frames for {} atoms with {} forces to {}",
+        record.frames.len(),
+        config.n,
+        config.force_method.as_str(),
+        output.display()
     );
 }
 
-/// Recompute per-atom total energy from a saved frame's positions/velocities.
-fn per_atom_energy(f: &FrameRecord, box_len: f64, cutoff: f64) -> f64 {
-    let pos: Vec<Vec2> = f.x.iter().zip(&f.y).map(|(&a, &b)| [a, b]).collect();
-    let vel: Vec<Vec2> = f.vx.iter().zip(&f.vy).map(|(&a, &b)| [a, b]).collect();
-    let sys = System::with_box(pos, vel, BoxConfig { length: box_len, cutoff });
-    total_energy(&sys) / f.x.len() as f64
-}
-
-fn cmd_check(dir: &PathBuf) {
-    let (meta, frames) = store::read_run(dir).unwrap_or_else(|e| fail(&format!("read {:?}: {e}", dir)));
-    if frames.is_empty() {
-        fail("no frames found in trajectory");
-    }
-    let ts: Vec<f64> = frames.iter().map(|f| f.t).collect();
-    let es: Vec<f64> = frames
-        .iter()
-        .map(|f| per_atom_energy(f, meta.box_len, meta.cutoff))
-        .collect();
-    let drift = secular_drift(&ts, &es);
-    let (t_speed, chi2) = fit_speed_temperature(&frames, 40);
-
-    println!("secular drift  = {drift:.6e}");
-    println!("T_speed        = {t_speed:.4}");
-    println!("chi2/dof       = {chi2:.4}");
-    let pass = drift < 2e-3 && (t_speed - 0.5).abs() < 0.05 && chi2 < 2.0;
-    println!("{}", if pass { "PASS" } else { "FAIL" });
-    if !pass {
+fn cmd_check(dir: &Path) {
+    let (meta, frames) = store::read_run(dir)
+        .unwrap_or_else(|error| fail(format!("cannot read {}: {error}", dir.display())));
+    let report = evaluate_saved_run(&meta, &frames).unwrap_or_else(|error| fail(error));
+    println!(
+        "secular drift  = {:.6e}   limit < 2e-3",
+        report.secular_drift
+    );
+    println!(
+        "T_speed        = {:.6}   |T_speed - {:.3}| limit < 0.05",
+        report.t_speed, meta.temperature
+    );
+    println!("chi2/22        = {:.6}   limit < 2", report.chi2_per_22);
+    println!(
+        "stored E error = {:.3e}   limit < 1e-8",
+        report.stored_energy_max_error
+    );
+    if report.passes(meta.temperature) {
+        println!("PASS");
+    } else {
+        println!("FAIL");
         std::process::exit(1);
     }
 }
 
+fn cmd_video(args: &[String]) {
+    let dir = args
+        .first()
+        .filter(|value| !value.starts_with("--"))
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("artifacts"));
+    let output = args
+        .iter()
+        .position(|value| value == "--out")
+        .and_then(|index| args.get(index + 1))
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("fluid.mp4"));
+    let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("scripts/render_video.py");
+    let status = std::process::Command::new("python3")
+        .arg(script)
+        .arg(dir)
+        .arg(output)
+        .status()
+        .unwrap_or_else(|error| fail(format!("cannot start video renderer: {error}")));
+    std::process::exit(status.code().unwrap_or(1));
+}
+
 fn main() {
-    let argv: Vec<String> = env::args().skip(1).collect();
-    if argv.is_empty() {
-        cmd_run(&argv); // bare `md` = default run into artifacts/
-        return;
-    }
-    match argv[0].as_str() {
-        "run" => cmd_run(&argv[1..]),
-        "check" => {
-            let dir = argv
-                .get(1)
+    let args: Vec<String> = env::args().skip(1).collect();
+    match args.first().map(String::as_str) {
+        None => cmd_run(&[]),
+        Some("run") => cmd_run(&args[1..]),
+        Some("check") => cmd_check(
+            args.get(1)
                 .map(PathBuf::from)
-                .unwrap_or_else(|| PathBuf::from("artifacts"));
-            cmd_check(&dir);
-        }
-        "video" => {
-            let dir = argv
-                .get(1)
-                .map(PathBuf::from)
-                .unwrap_or_else(|| PathBuf::from("artifacts"));
-            let out = argv
-                .iter()
-                .position(|a| a == "--out")
-                .and_then(|p| argv.get(p + 1))
-                .cloned()
-                .unwrap_or_else(|| "fluid.mp4".to_string());
-            let script = format!(
-                "{}/scripts/render_video.py",
-                env!("CARGO_MANIFEST_DIR")
-            );
-            let status = std::process::Command::new("python3")
-                .args([&script, dir.to_str().unwrap(), &out])
-                .status()
-                .expect("failed to run python3 renderer");
-            std::process::exit(status.code().unwrap_or(1));
-        }
-        other if other.starts_with("--") => cmd_run(&argv),
-        other => fail(&format!("unknown subcommand {other}")),
+                .unwrap_or_else(|| PathBuf::from("artifacts"))
+                .as_path(),
+        ),
+        Some("video") => cmd_video(&args[1..]),
+        Some("--help" | "-h") => print_help_and_exit(),
+        Some(flag) if flag.starts_with("--") => cmd_run(&args),
+        Some(other) => fail(format!("unknown subcommand {other}")),
     }
 }

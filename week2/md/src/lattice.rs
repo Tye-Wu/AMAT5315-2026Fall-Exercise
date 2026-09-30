@@ -1,58 +1,55 @@
-//! Deterministic initial configurations: a triangular lattice generator.
+//! Triangular lattices at a prescribed two-dimensional number density.
 
 use crate::system::Vec2;
 
-/// Generate a `rows` x `cols` triangular lattice wrapped into a periodic box of
-/// side `length`.
+/// Return a `rows x cols` triangular lattice and its rectangular periodic box.
 ///
-/// Row `iy` is offset by half a column spacing so neighbouring rows nest, the
-/// classic triangular (hexagonal) arrangement; every point is wrapped into
-/// `[0, length)^2` so it is a valid periodic-box configuration.
-pub fn triangular_lattice(rows: usize, cols: usize, length: f64) -> Vec<Vec2> {
-    let a = length / cols as f64; // column spacing, ~1.12 for the defaults
-    let dy = a * 0.866_025_403_784_438_6; // row spacing = a * sqrt(3)/2
-    let mut out = Vec::with_capacity(rows * cols);
-    for iy in 0..rows {
-        for ix in 0..cols {
-            let x = ((ix as f64 + 0.5 * (iy % 2) as f64) * a).rem_euclid(length);
-            let y = (iy as f64 * dy).rem_euclid(length);
-            out.push([x, y]);
+/// The horizontal spacing is `a = sqrt(2 / (sqrt(3) rho))`, the row spacing
+/// is `h = sqrt(3) a / 2`, and alternate rows are shifted by `a / 2`.
+pub fn triangular_lattice(rows: usize, cols: usize, rho: f64) -> (Vec<Vec2>, Vec2) {
+    assert!(rows > 0 && cols > 0);
+    assert!(rho > 0.0);
+    assert_eq!(
+        rows % 2,
+        0,
+        "an even row count is required across periodic y"
+    );
+    let a = (2.0 / (3.0_f64.sqrt() * rho)).sqrt();
+    let h = 0.5 * 3.0_f64.sqrt() * a;
+    let lengths = [cols as f64 * a, rows as f64 * h];
+    let mut positions = Vec::with_capacity(rows * cols);
+    for j in 0..rows {
+        for i in 0..cols {
+            positions.push([(i as f64 + 0.5 * (j % 2) as f64) * a, j as f64 * h]);
         }
     }
-    out
+    (positions, lengths)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn min_pair_dist(pts: &[[f64; 2]]) -> f64 {
-        let mut dmin = f64::INFINITY;
-        for i in 0..pts.len() {
-            for j in (i + 1)..pts.len() {
-                let d2 = (pts[i][0] - pts[j][0]).powi(2) + (pts[i][1] - pts[j][1]).powi(2);
-                dmin = dmin.min(d2);
-            }
-        }
-        dmin.sqrt()
+    #[test]
+    fn ten_by_ten_contract_lattice_matches_sheet() {
+        let (positions, lengths) = triangular_lattice(10, 10, 0.8);
+        assert_eq!(positions.len(), 100);
+        assert!((lengths[0] - 12.014_057_070_7).abs() < 1e-9);
+        assert!((lengths[1] - 10.404_478_625_7).abs() < 1e-9);
+        assert!((positions[10][0] - lengths[0] / 20.0).abs() < 1e-12);
+        assert!(
+            positions.iter().all(|p| {
+                (0.0..lengths[0]).contains(&p[0]) && (0.0..lengths[1]).contains(&p[1])
+            })
+        );
     }
 
     #[test]
-    fn ten_by_ten_lattice_has_100_points_in_box() {
-        let len = 11.1803398875; // sqrt(100 / 0.8)
-        let pts = triangular_lattice(10, 10, len);
-        assert_eq!(pts.len(), 100);
-        for p in &pts {
-            assert!((0.0..len).contains(&p[0]), "x {}", p[0]);
-            assert!((0.0..len).contains(&p[1]), "y {}", p[1]);
-        }
-        // Spacing about L/10 ~ 1.12: comfortably above the LJ core.
-        assert!(min_pair_dist(&pts) > 0.9, "min dist {}", min_pair_dist(&pts));
-    }
-
-    #[test]
-    fn eight_by_eight_lattice_has_64_points() {
-        let pts = triangular_lattice(8, 8, 8.0);
-        assert_eq!(pts.len(), 64);
+    fn larger_grids_keep_density_and_spacing() {
+        let (_, small) = triangular_lattice(10, 10, 0.8);
+        let (_, large) = triangular_lattice(20, 20, 0.8);
+        assert!((large[0] / small[0] - 2.0).abs() < 1e-12);
+        assert!((large[1] / small[1] - 2.0).abs() < 1e-12);
+        assert!((400.0 / (large[0] * large[1]) - 0.8).abs() < 1e-12);
     }
 }
