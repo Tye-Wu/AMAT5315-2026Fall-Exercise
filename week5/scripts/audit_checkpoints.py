@@ -68,10 +68,10 @@ def main() -> None:
     full_image = np.load(FULL)
     budgets = sorted(REFERENCE_CALLS)
     rows = []
-    fig, axes = plt.subplots(2, 2, figsize=(13, 8), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(10, 5), constrained_layout=True)
     colors = {"restore": "tab:purple", "call": "tab:orange", "store": "tab:blue",
               "grad": "tab:green", "fetch": "tab:red"}
-    for ax, budget in zip(axes.flat, budgets):
+    for budget in budgets:
         folder = ART / f"checkpoint-{budget}"
         result = json.loads((folder / "result.json").read_text())
         image = np.load(folder / "image.npy")
@@ -99,35 +99,42 @@ def main() -> None:
                      "image_relative_l2_error_vs_full_history": relative_error,
                      "transpose_relative_error": result["transpose_relative_error"],
                      "per_shot_audits": per_shot})
-        acts = json.loads((folder / "actions-0.json").read_text())
-        for op, color in colors.items():
-            selected = [(i, a["step"]) for i, a in enumerate(acts) if a["action"] == op]
-            if selected:
-                xx, yy = zip(*selected)
-                ax.scatter(xx, yy, s=2 if op == "call" else 9, alpha=.55,
-                           color=color, label=op, rasterized=True)
-        ax.set(title=f"{budget} extra slots; {REFERENCE_CALLS[budget]:,} replay calls/shot",
-               xlabel="Action sequence index", ylabel="Time-step index")
-        ax.invert_yaxis()
-        ax.legend(ncol=3, fontsize=7, frameon=False)
-    fig.suptitle("Treeverse action schedules (shot 0)")
+    actions = json.loads((ART / "checkpoint-5" / "actions-0.json").read_text())
+    for op, color in colors.items():
+        selected = [(i, a["step"]) for i, a in enumerate(actions) if a["action"] == op]
+        if selected:
+            xx, yy = zip(*selected)
+            ax.scatter(xx, yy, s=3 if op == "call" else 10, alpha=.62,
+                       color=color, label=op, rasterized=True)
+    ax.set(title="Treeverse actions; shot 0, five extra checkpoint slots",
+           xlabel="Operation index", ylabel="Time-step index")
+    ax.set_ylim(0, 245)
+    ax.legend(ncol=5, fontsize=8, frameon=False)
     fig.savefig(ART / "checkpoint-actions.png", dpi=180)
     plt.close(fig)
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 4), constrained_layout=True)
     x = np.array(budgets)
     calls = np.array([REFERENCE_CALLS[k] for k in budgets])
-    states = x + 1
     ax[0].plot(x, calls, "o-", label="Treeverse replay calls/shot")
     ax[0].axhline(240, color="tab:red", ls="--", label="Full history: 240 forward steps")
     ax[0].set(xlabel="Extra checkpoint slots", ylabel="Forward replays per shot",
               title="Compute–memory tradeoff", yscale="log")
     ax[0].legend(frameon=False, fontsize=8)
-    ax[1].plot(x, states, "o-", color="tab:purple")
-    ax[1].set(xlabel="Extra checkpoint slots", ylabel="Peak saved states (including initial state)",
-              title="Peak memory: small reflector model")
-    for k, n in zip(x, states):
-        ax[1].annotate(f"{n} states\n{n*2*41*41*8:,} B", (k, n), xytext=(5, 8),
+    full_bytes = 241 * 2 * 41 * 41 * 8
+    memory_x = np.array([0] + budgets)
+    memory_bytes = np.array([full_bytes] + [row["peak_saved_bytes"] for row in rows])
+    ax[1].plot(memory_x, memory_bytes, "o-", color="tab:purple", label="Peak saved-state bytes")
+    ax[1].set(xlabel="Extra checkpoint slots (0 marks full history)", ylabel="Peak saved-state storage (bytes)",
+              title="Memory use; linear scale")
+    ax[1].set_ylim(0, full_bytes * 1.16)
+    ax[1].grid(alpha=.2)
+    ax[1].legend(frameon=False, fontsize=8)
+    ax[1].annotate(f"Full history\n241 states; {full_bytes:,} B", (0, full_bytes),
+                   xytext=(12, -25), textcoords="offset points", fontsize=7)
+    for k, row in zip(budgets, rows):
+        ax[1].annotate(f"{row['peak_saved_states']} states\n{row['peak_saved_bytes']:,} B",
+                       (k, row["peak_saved_bytes"]), xytext=(4, 9),
                        textcoords="offset points", fontsize=7)
     fig.savefig(ART / "checkpoint-work.png", dpi=180)
     plt.close(fig)

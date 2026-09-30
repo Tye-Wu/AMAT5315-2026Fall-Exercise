@@ -7,9 +7,9 @@ mode = "forward: pressure traces; born: Born scattered data; adjoint: migrated i
 out = "Output directory"
 
 [writes]
-stdout = "A summary of the selected mode and its checks."
+stdout = "Overall data L2 norm, then one tab-separated shot line with per-shot data L2; forward also prints each shot's peak absolute pressure, trace index, and receiver index/coordinates."
 "<out>/run.json" = "Input provenance and compact run configuration."
-"<out>/result.json" = "Mode, grid, time steps, survey and validation statistics."
+"<out>/result.json" = "Mode, grid, time steps, survey, trace norms/peaks and validation statistics."
 "<out>/traces.npy" = "Forward float64 pressures [shot, step, receiver]."
 "<out>/born_data.npy" = "Born float64 scattered data [shot, step, receiver]."
 "<out>/image.npy" = "Adjoint float64 velocity sensitivity [z, x]."

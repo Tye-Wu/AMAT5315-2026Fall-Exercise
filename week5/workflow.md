@@ -17,4 +17,4 @@
 | T005 | validated | Treeverse schedules, action audits and storage/recomputation curves |
 | T006 | validated | six-state Marmousi migration and four-panel evidence |
 | T007 | validated | README and evidence inventory; remote push requires owner action |
-| T008 | user action | Alibaba account preparation only after instructor explains expected cost |
+| T008 | completed handoff; student action pending | Alibaba account/payment verification only after instructor explains expected cost |

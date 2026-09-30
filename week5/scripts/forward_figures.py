@@ -19,26 +19,28 @@ def main() -> None:
     bg = np.asarray(e["background"])
     dv = np.asarray(e["perturbation"])
     extent = [0, e["nx"] * dx_km, e["nz"] * dx_km, 0]
-    fig, ax = plt.subplots(1, 3, figsize=(15, 4.8), constrained_layout=True)
+    fig, ax = plt.subplots(1, 2, figsize=(11, 4.8), constrained_layout=True)
     im = ax[0].imshow(bg, extent=extent, aspect="equal", cmap="viridis")
     fig.colorbar(im, ax=ax[0], label="Background speed (km/s)")
-    im2 = ax[1].imshow(dv, extent=extent, aspect="equal", cmap="RdBu_r")
-    fig.colorbar(im2, ax=ax[1], label="Velocity perturbation (km/s)")
+    perturb_bound = float(np.max(np.abs(dv)))
+    im2 = ax[0].imshow(dv, extent=extent, aspect="equal", cmap="RdBu_r", alpha=0.75,
+                       vmin=-perturb_bound, vmax=perturb_bound)
+    fig.colorbar(im2, ax=ax[0], label="Velocity perturbation (km/s)")
     for x, z in e["shots"]:
-        ax[1].plot(x * dx_km, z * dx_km, "r*", ms=10)
+        ax[0].plot(x * dx_km, z * dx_km, "r*", ms=10, label="Shot" if x == e["shots"][0][0] else None)
     for x, z in e["receivers"]:
-        ax[1].plot(x * dx_km, z * dx_km, "kv", ms=3)
-    for a in ax[:2]:
-        a.set(xlabel="Horizontal position (km)", ylabel="Depth (km)")
-        a.invert_yaxis()
-        a.grid(alpha=.15)
+        ax[0].plot(x * dx_km, z * dx_km, "kv", ms=3,
+                   label="Receiver" if x == e["receivers"][0][0] else None)
+    ax[0].set(xlabel="Horizontal position (km)", ylabel="Depth (km)", title="Survey geometry and model")
+    ax[0].legend(frameon=True, fontsize=8, loc="lower right")
+    ax[0].grid(alpha=.15)
     t = np.arange(e["steps"]) * e["dt"] * time_s
     theta = np.pi * e["source_frequency"] * (np.arange(e["steps"]) * e["dt"] - e["source_peak_time"])
     pulse = e["source_amplitude"] * (1 - 2 * theta**2) * np.exp(-theta**2)
-    ax[2].plot(t, pulse, color="black")
-    ax[2].axvline(e["source_peak_time"] * time_s, color="tab:red", ls="--", label="peak time")
-    ax[2].set(xlabel="Time (s)", ylabel="Source amplitude", title="Ricker source")
-    ax[2].legend(frameon=False)
+    ax[1].plot(t, pulse, color="black")
+    ax[1].axvline(e["source_peak_time"] * time_s, color="tab:red", ls="--", label="peak time")
+    ax[1].set(xlabel="Time (s)", ylabel="Source amplitude", title="Ricker source")
+    ax[1].legend(frameon=False)
     fig.savefig(OUT / "inputs.png", dpi=180)
     plt.close(fig)
 
@@ -60,17 +62,27 @@ def main() -> None:
     echo = np.load(OUT / "forward" / "echo.npy")
     frame = run["recording"]["steps"].index(150)
     fig, axes = plt.subplots(1, 2, figsize=(10, 4.3), constrained_layout=True)
-    for a, arr, title in zip(axes, [wf[frame], echo[frame]], ["Background wavefield; step 150", "Reflector echo; step 150"]):
+    wavefield = wf[frame]
+    echo_frame = echo[frame]
+    for a, arr, title in zip(axes, [wavefield, echo_frame], ["Background wavefield; step 150", "Reflector echo; step 150"]):
         lim = np.max(np.abs(arr))
         im = a.imshow(arr, extent=extent, aspect="equal", cmap="RdBu_r", vmin=-lim, vmax=lim)
         a.set(title=title, xlabel="Horizontal position (km)", ylabel="Depth (km)")
-        a.invert_yaxis()
         fig.colorbar(im, ax=a, label="Pressure")
     direct = float(np.max(np.abs(wf[frame])))
     scattered = float(np.max(np.abs(echo[frame])))
     fig.suptitle(f"Echo/direct maximum = {scattered / direct:.3%}")
     fig.savefig(OUT / "forward" / "wavefield-echo-step150.png", dpi=180)
     plt.close(fig)
+    for arr, name, title in [(wavefield, "wavefield.png", "Background wavefield; shot 0, step 150 (3.00 s)"),
+                             (echo_frame, "echo.png", "Reflector echo; shot 0, step 150 (3.00 s)")]:
+        fig, a = plt.subplots(figsize=(5.6, 4.8), constrained_layout=True)
+        lim = float(np.max(np.abs(arr)))
+        image = a.imshow(arr, extent=extent, aspect="equal", cmap="RdBu_r", vmin=-lim, vmax=lim)
+        a.set(title=title, xlabel="Horizontal position (km)", ylabel="Depth (km)")
+        fig.colorbar(image, ax=a, label="Pressure")
+        fig.savefig(OUT / "forward" / name, dpi=180)
+        plt.close(fig)
     print(json.dumps({"step150_direct_max": direct, "step150_echo_max": scattered,
                       "step150_echo_fraction": scattered / direct,
                       "reference_trace_l2": run["trace_l2"]}, indent=2))

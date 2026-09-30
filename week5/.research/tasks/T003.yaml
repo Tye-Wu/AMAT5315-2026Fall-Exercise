@@ -20,6 +20,7 @@ outputs_expected:
   path: artifacts/inputs.png
 success_criteria:
 - trace L2 norm and per-shot maximum amplitudes agree with references to relative error below 1e-4
+- per-shot maximum trace index and receiver index/location are reported
 - boundary, sponge and source update match equations 8 and 9 in the sheet
 - step-150 echo field is isolated by subtracting background-only from perturbed runs and is about 2 percent of direct maximum
 knowledge_required: []

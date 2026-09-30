@@ -17,7 +17,7 @@ outputs_expected:
   path: artifacts/marmousi-validation.json
 - artifact_id: marmousi-figure
   type: figure
-  path: artifacts/marmousi-four-panel.png
+  path: artifacts/marmousi.png
 success_criteria:
 - checkpointed adjoint uses six total saved states and exactly 20,788,320 peak bytes
 - raw image L2 norm matches 6.7037741e-4 within relative error 1e-4
@@ -33,7 +33,7 @@ execution_policy:
   requires_claim: true
   lease_ttl_minutes: 120
   heartbeat_interval_minutes: 10
-  owner_dir: artifacts/marmousi-adjoint/
-  exclusive_paths: [artifacts/marmousi/, artifacts/marmousi-adjoint/]
+  owner_dir: artifacts/marmousi-image/
+  exclusive_paths: [artifacts/marmousi-born/, artifacts/marmousi-image/]
 assumptions: ["Linux was reported as available, but a configured SSH alias/work directory was not provided; Enzyme execution was verified on native Apple Silicon instead."]
 provenance: [/Users/abelwu/Desktop/week5-learning-sheet.pdf, MARMOUSI-LICENSE]

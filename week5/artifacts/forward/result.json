@@ -79,6 +79,11 @@
     ],
     "steps": 240
   },
+  "max_trace_receiver": [
+    1,
+    6,
+    12
+  ],
   "max_trace_step": [
     83,
     83,
@@ -258,5 +263,45 @@
     0.5927139734671293,
     0.60809514342744
   ],
-  "trace_l2": 11.57476950361405
+  "shot_peaks": [
+    {
+      "peak_abs": 0.60809514342744,
+      "receiver_index": 1,
+      "receiver_xy": [
+        9,
+        8
+      ],
+      "shot": 0,
+      "trace_index": 83,
+      "trace_l2": 6.623960807912694
+    },
+    {
+      "peak_abs": 0.5927139734671293,
+      "receiver_index": 6,
+      "receiver_xy": [
+        19,
+        8
+      ],
+      "shot": 1,
+      "trace_index": 83,
+      "trace_l2": 6.798645121806725
+    },
+    {
+      "peak_abs": 0.60809514342744,
+      "receiver_index": 12,
+      "receiver_xy": [
+        31,
+        8
+      ],
+      "shot": 2,
+      "trace_index": 83,
+      "trace_l2": 6.623960807912695
+    }
+  ],
+  "shot_trace_l2": [
+    6.623960807912694,
+    6.798645121806725,
+    6.623960807912695
+  ],
+  "trace_l2": 11.574769503614023
 }

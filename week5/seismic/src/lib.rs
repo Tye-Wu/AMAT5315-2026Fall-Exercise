@@ -94,8 +94,10 @@ pub struct ForwardResult {
     pub echo: Vec<Vec<f32>>,
     pub frame_steps: Vec<usize>,
     pub trace_l2: f64,
+    pub shot_trace_l2: Vec<f64>,
     pub shot_maxima: Vec<f64>,
     pub max_trace_step: Vec<usize>,
+    pub max_trace_receiver: Vec<usize>,
 }
 
 pub fn source_wavelet(exp: &Experiment, t: f64) -> f64 {
@@ -194,6 +196,8 @@ pub fn run_forward(
     let mut traces = Vec::with_capacity(exp.shots.len());
     let mut shot_maxima = Vec::with_capacity(exp.shots.len());
     let mut max_trace_step = Vec::with_capacity(exp.shots.len());
+    let mut max_trace_receiver = Vec::with_capacity(exp.shots.len());
+    let mut shot_trace_l2 = Vec::with_capacity(exp.shots.len());
     let mut first_wavefield = Vec::new();
     let mut first_echo = Vec::new();
     let mut frame_steps = vec![0];
@@ -201,22 +205,27 @@ pub fn run_forward(
     let mut sum2 = 0.0;
     for (shot_i, &shot) in exp.shots.iter().enumerate() {
         let (gather, frames) = forward_shot(exp, &velocity, &sigma, shot, every);
+        let mut shot_sum2 = 0.0;
         for frame in &gather {
             for &v in frame {
-                sum2 += v * v;
+                shot_sum2 += v * v;
             }
         }
-        let (mut peak, mut peak_step) = (0.0_f64, 0);
+        sum2 += shot_sum2;
+        let (mut peak, mut peak_step, mut peak_receiver) = (0.0_f64, 0, 0);
         for (step, frame) in gather.iter().enumerate() {
-            for value in frame {
+            for (receiver, value) in frame.iter().enumerate() {
                 if value.abs() > peak {
                     peak = value.abs();
                     peak_step = step;
+                    peak_receiver = receiver;
                 }
             }
         }
+        shot_trace_l2.push(shot_sum2.sqrt());
         shot_maxima.push(peak);
         max_trace_step.push(peak_step);
+        max_trace_receiver.push(peak_receiver);
         traces.push(gather);
         if shot_i == 0 {
             first_wavefield = frames.clone();
@@ -240,8 +249,10 @@ pub fn run_forward(
         echo: first_echo,
         frame_steps,
         trace_l2: sum2.sqrt(),
+        shot_trace_l2,
         shot_maxima,
         max_trace_step,
+        max_trace_receiver,
     })
 }
 

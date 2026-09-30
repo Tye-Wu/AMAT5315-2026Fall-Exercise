@@ -220,7 +220,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &result.wavefield,
         )?;
         let rec = recording_meta(&experiment, every, &result.frame_steps);
-        let meta = serde_json::json!({"base":base,"trace_l2":result.trace_l2,"shot_maxima":result.shot_maxima,"max_trace_step":result.max_trace_step,"recording":rec});
+        let shot_peaks = (0..experiment.shots.len()).map(|shot| {
+            let receiver = result.max_trace_receiver[shot];
+            serde_json::json!({"shot":shot,"trace_l2":result.shot_trace_l2[shot],
+                "peak_abs":result.shot_maxima[shot],"trace_index":result.max_trace_step[shot],
+                "receiver_index":receiver,"receiver_xy":experiment.receivers[receiver]})
+        }).collect::<Vec<_>>();
+        let meta = serde_json::json!({"base":base,"trace_l2":result.trace_l2,
+            "shot_trace_l2":result.shot_trace_l2,"shot_maxima":result.shot_maxima,
+            "max_trace_step":result.max_trace_step,"max_trace_receiver":result.max_trace_receiver,
+            "shot_peaks":shot_peaks,"recording":rec});
         fs::write(out.join("result.json"), serde_json::to_vec_pretty(&meta)?)?;
         fs::write(
             out.join("run.json"),
@@ -228,10 +237,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &serde_json::json!({"experiment_file":input,"experiment":compact_experiment(&experiment),"recording":meta["recording"]}),
             )?,
         )?;
-        println!(
-            "trace_l2={:.9}\nshot_maxima={:?}\nmax_trace_step={:?}",
-            result.trace_l2, result.shot_maxima, result.max_trace_step
-        );
+        println!("trace_l2={:.9}", result.trace_l2);
+        for shot in meta["shot_peaks"].as_array().unwrap() {
+            println!("shot={}\tmode=forward\tshot_trace_l2={:.9}\tpeak_abs={:.9}\ttrace_index={}\treceiver_index={}\treceiver_xy={}",
+                shot["shot"], shot["trace_l2"].as_f64().unwrap(), shot["peak_abs"].as_f64().unwrap(),
+                shot["trace_index"], shot["receiver_index"], shot["receiver_xy"]);
+        }
     } else if mode == "born" {
         #[cfg(feature = "enzyme")]
         {

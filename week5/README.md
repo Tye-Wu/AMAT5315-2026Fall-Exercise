@@ -32,11 +32,11 @@ Evidence: `artifacts/ad/derivatives.json`, `modes.png`, `graph.png`, `grad-graph
 
 This part implements the discrete wave solver and compares a background-only simulation with one containing a thin velocity perturbation. The difference isolates the reflected/scattered response while keeping source, grid, and time stepping identical. The three-shot, 14-receiver experiment has 41×41 cells and 240 time steps.
 
-The forward trace norm checks the overall data scale; per-shot maxima and their time indices catch source/update/recording off-by-one errors; and saving selected pressure frames shows that the wave actually propagates and the perturbation generates an echo. The waveform and input plots make the model geometry, Ricker pulse, shot locations, receivers, and gathers inspectable.
+The forward trace norm checks the overall data scale; per-shot maxima, trace indices and receiver coordinates catch source/update/recording off-by-one errors; and saving selected pressure frames shows that the wave actually propagates and the perturbation generates an echo. The waveform and input plots make the model geometry, Ricker pulse, shot locations, receivers, and gathers inspectable. Receivers sample after each update: trace index 83 is the sample following update 84.
 
-Verified: trace L2 norm `11.57476950361405`; shot maxima `[0.6080951434, 0.5927139735, 0.6080951434]`, each at sample 83. At step 150, the direct-field maximum is `0.25524342` and the echo maximum is `0.00622470` (about 2.44% of the direct maximum). The trace tensor has shape `(3, 240, 14)`.
+Verified: trace L2 norm `11.57476950361405`; shot maxima `[0.6080951434, 0.5927139735, 0.6080951434]`, each at trace index 83, with its receiver index and `[x,z]` coordinate reported in the terminal and `result.json`. At step 150, the direct-field maximum is `0.25524342` and the echo maximum is `0.00622470` (about 2.44% of the direct maximum). The trace tensor has shape `(3, 240, 14)`.
 
-Evidence: `artifacts/inputs.png`, `artifacts/forward/gathers.png`, and `artifacts/forward/wavefield-echo-step150.png`; machine-readable values and frame metadata are in `artifacts/forward/result.json` and `recording.json`.
+Evidence: `artifacts/inputs.png` (two panels: combined model/survey geometry and the Ricker pulse), `artifacts/forward/gathers.png`, the standalone `artifacts/forward/wavefield.png` and `echo.png` snapshots, and their combined `wavefield-echo-step150.png`; machine-readable values and frame metadata are in `artifacts/forward/result.json` and `recording.json`.
 
 ### Part 3 — Enzyme JVP/VJP, Born data, and adjoint image
 
@@ -63,15 +63,15 @@ Four extra-slot budgets are tested. The audit independently interprets every act
 
 All budgets have zero invalid restores, duplicate stores, bad calls/fetches, and budget overruns. The work counts match the course reference. This exposes the central tradeoff: more checkpoints cost more memory but reduce recomputation.
 
-Evidence: `artifacts/checkpoint-actions.png`, `checkpoint-work.png`, `checkpoint-audit.json`, and the per-shot `actions-*.json` logs in each `artifacts/checkpoint-{1,3,5,10}/` directory.
+Evidence: `artifacts/checkpoint-actions.png` (shot 0, five extra slots), `checkpoint-work.png` (replay steps and saved bytes, including full history), `checkpoint-audit.json`, and the per-shot `actions-*.json` logs in each `artifacts/checkpoint-{1,3,5,10}/` directory.
 
 ### Part 5 — Marmousi scale-up
 
 The larger 805×269 Marmousi model uses 1,200 steps, nine shots, and 91 receivers. It is run with Enzyme JVP to generate Born data, then Enzyme VJP under Treeverse with five extra checkpoint slots. Full-history adjoint storage is deliberately not used for this case. The image norm checks agreement with the course reference; the transposition dot-product check validates the large run's forward/adjoint consistency; and the saved-state count and bytes document the memory bound.
 
-Verified: image L2 norm `6.7037740604e-4` (relative difference about `5.91e-9` from the reference `6.7037741e-4`); transpose relative error `1.73e-14`; 10,800 reverse steps and 70,956 replay steps over nine shots; peak six saved states, `20,788,320` bytes. Born data shape is `(9, 1200, 91)`. The four-panel figure displays the background, perturbation, Born gather for the shot at 10 km, and raw adjoint image; the strongest image energy is in the shallow layers.
+Verified: image L2 norm `6.7037740604e-4` (relative difference about `5.91e-9` from the reference `6.7037741e-4`); transpose relative error `1.73e-14`; 10,800 reverse steps and 70,956 replay steps over nine shots; peak six saved states, `20,788,320` bytes. Born data shape is `(9, 1200, 91)`. The four-panel figure displays the background, perturbation, Born gather for the shot at 10 km, and raw adjoint image; the strongest image energy is in the shallow layers. Even an accurate derivative need not reproduce the perturbation pixel-for-pixel: the RTM image is `JᵀJm`, not `m`. The normal operator `JᵀJ` blurs and reshapes the model according to finite source bandwidth, limited illumination, and receiver coverage, while deeper structure is weakly illuminated. No depth-dependent display gain is applied.
 
-Evidence: `artifacts/marmousi-four-panel.png`, `artifacts/marmousi-validation.json`, and `artifacts/marmousi-adjoint/result.json`. The larger raw arrays and source input are intentionally not tracked; regenerate them using the commands below.
+Evidence: `artifacts/marmousi.png`, `artifacts/marmousi-validation.json`, `artifacts/marmousi-born/result.json`, and `artifacts/marmousi-image/result.json`. The larger raw arrays and source input are intentionally not tracked; regenerate them using the commands below.
 
 ## Reproducing the computations
 
@@ -107,16 +107,33 @@ uv run --project week5 python week5/scripts/audit_checkpoints.py
 
 # Marmousi — Treeverse only; do not replace --storage treeverse with full history
 cargo +nightly-2026-09-05 run --release --features enzyme --manifest-path week5/seismic/Cargo.toml -- \
-  --experiment week5/inputs/marmousi.json --out week5/artifacts/marmousi --mode born
+  --experiment week5/inputs/marmousi.json --out week5/artifacts/marmousi-born --mode born
 cargo +nightly-2026-09-05 run --release --features enzyme --manifest-path week5/seismic/Cargo.toml -- \
-  --experiment week5/inputs/marmousi.json --out week5/artifacts/marmousi-adjoint --mode adjoint \
-  --data week5/artifacts/marmousi/born_data.npy --storage treeverse --checkpoints 5 --every 20
+  --experiment week5/inputs/marmousi.json --out week5/artifacts/marmousi-image --mode adjoint \
+  --data week5/artifacts/marmousi-born/born_data.npy --storage treeverse --checkpoints 5 --every 20
 uv run --project week5 python week5/scripts/marmousi_figures.py
 ```
+
+## Evidence inventory and generating commands
+
+The commands above are the full invocations; this inventory maps each named output to its generator. All listed JSON and PNG evidence is committed. `.npy` arrays shown below are generated locally and remain Git-ignored, as required.
+
+| Evidence files | Generating command |
+|---|---|
+| `artifacts/ad/derivatives.json`, `modes.png`, `graph.png`, `grad-graph.png` | `uv run --project week5 python week5/scripts/ad.py` |
+| `artifacts/ad/scaling.json`, `scaling.png` | `uv run --project week5 python week5/scripts/cluster_scaling.py` |
+| `artifacts/inputs.png`; `artifacts/forward/gathers.png`, `wavefield.png`, `echo.png`, `wavefield-echo-step150.png`; `forward/result.json`, `run.json`, `recording.json`, `traces.npy`, `wavefield.npy`, `echo.npy` | Stable forward command plus `uv run --project week5 python week5/scripts/forward_figures.py` |
+| `artifacts/born/result.json`, `run.json`, `born_data.npy` | Enzyme `--mode born` command (small reflector) |
+| `artifacts/adjoint/result.json`, `run.json`, `recording.json`, `image.npy`, `wavefield.npy`; `image.png`, `wavefield.png` | Enzyme `--mode adjoint --storage full` command plus `uv run --project week5 python week5/scripts/adjoint_figures.py` |
+| `artifacts/checkpoint-{1,3,5,10}/result.json`, `run.json`, `recording.json`, `image.npy`, `wavefield.npy`, `actions-{0,1,2}.json` | Four-command Treeverse loop in the checkpoint section |
+| `artifacts/checkpoint-audit.json`, `checkpoint-actions.png`, `checkpoint-work.png` | `uv run --project week5 python week5/scripts/audit_checkpoints.py` |
+| `artifacts/marmousi-born/result.json`, `run.json`, `born_data.npy` | Enzyme Marmousi `--mode born` command |
+| `artifacts/marmousi-image/result.json`, `run.json`, `recording.json`, `image.npy`, `wavefield.npy`, `actions-{0..8}.json`; `artifacts/marmousi-validation.json`, `marmousi.png` | Enzyme Marmousi Treeverse command plus `uv run --project week5 python week5/scripts/marmousi_figures.py` |
+| Per-run `result.json` quantities (trace/Born norms, maxima, transpose check, replay counts, saved states and bytes) | Written by the corresponding Rust CLI command listed above |
 
 ## Reproducibility and scope notes
 
 - Before running from a fresh clone, copy the exact course-provided experiment JSONs into the ignored `week5/inputs/` directory. The inputs used for this run had SHA-256 `22b84948e28e8e13e958f47b2d4bf9a70a3d0c8ee6ffcaab3cdeb8003b9902a6` (`reflector.json`) and `67beabdee96d8e3f6433c2f897b3b24b0c744e7808784148bb06310665d888b0` (`marmousi.json`). Verify them with `shasum -a 256 week5/inputs/*.json` before rerunning. JSON files, plots, action logs, and validation summaries are the reviewable evidence. Generated `.npy` arrays, the Python environment, Rust build output, and experiment input JSONs are ignored by Git. Marmousi input provenance and its license are retained.
 - Enzyme was built and executed successfully on the available native Apple Silicon host with the pinned nightly. Linux access details were not supplied in this task, so a separate remote Linux run is not claimed.
 - Performance ratios vary by machine and load. Scientific verification is based on numerical values, finite-difference/analytic checks, transpose consistency, exact schedule audits, and image comparisons.
-- This completes the local Week 5 work in the repository. It has not been pushed to GitHub or submitted to the course; pushing changes to the shared remote is left for the repository owner.
+- The Week 5 exercise work is complete in this repository. The course handout asks students to push the repository; the push status and commit are recorded in `REVIEW.md` after remote verification. This is not a course-platform submission.

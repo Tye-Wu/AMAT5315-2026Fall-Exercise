@@ -4,7 +4,7 @@ title: Student account preparation for Week 6
 role: synthesis-report
 role_contract: /Users/abelwu/.codex/.auto-computational-chemist/procedures/research-orchestrator/references/roles.md#synthesis-report
 skill: comp-chem-workflow
-status: proposed
+status: completed
 depends_on: [T001]
 approval: user_account_or_payment_setup
 inputs: []

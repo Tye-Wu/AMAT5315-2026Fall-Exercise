@@ -8,8 +8,8 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUT = ROOT / "inputs" / "marmousi.json"
-BORN = ROOT / "artifacts" / "marmousi"
-ADJOINT = ROOT / "artifacts" / "marmousi-adjoint"
+BORN = ROOT / "artifacts" / "marmousi-born"
+ADJOINT = ROOT / "artifacts" / "marmousi-image"
 
 
 def main() -> None:
@@ -54,7 +54,7 @@ def main() -> None:
     ax[1, 1].set(title="Raw Treeverse adjoint image", xlabel="Distance (km)", ylabel="Depth (km)")
     fig.colorbar(p, ax=ax[1, 1], label="Image amplitude (a.u.)")
     fig.suptitle("Marmousi Born modeling and checkpointed adjoint imaging")
-    output = ROOT / "artifacts" / "marmousi-four-panel.png"
+    output = ROOT / "artifacts" / "marmousi.png"
     fig.savefig(output, dpi=180)
     plt.close(fig)
 
