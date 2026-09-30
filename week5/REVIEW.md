@@ -27,6 +27,6 @@ Rust tests passed (4/4 in both stable and Enzyme-enabled release builds), the En
 
 ## Platform, repository, and remaining owner actions
 
-The Enzyme kernel was compiled and executed on native `aarch64-apple-darwin` using `rustc 1.100.0-nightly (0ed41eb41 2026-09-04)` plus the pinned `nightly-2026-09-05` toolchain. Although Linux is available, no SSH alias or remote work directory was supplied, so a separate Linux run is not claimed. The course handout asks students to push the exercise repository; that publication step is being completed, but the work has not been submitted to the course.
+The Enzyme kernel was compiled and executed on native `aarch64-apple-darwin` using `rustc 1.100.0-nightly (0ed41eb41 2026-09-04)` plus the pinned `nightly-2026-09-05` toolchain. Although Linux is available, no SSH alias or remote work directory was supplied, so a separate Linux run is not claimed. The course handout asks students to push the exercise repository. This work was pushed to `origin/main`; remote `refs/heads/main` was verified at commit `ca55a2f0f8445868305aaa153249740973d36ac4`. It has not been submitted to the course.
 
 Week 6 Alibaba account/payment setup remains a student-owned action to take only after the instructor explains expected costs. No GPU was rented.
