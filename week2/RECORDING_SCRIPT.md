@@ -9,4 +9,22 @@ Target length: 90–110 seconds. The student should record this with their own v
 5. Show `cold.mp4`, `hot.mp4`, and `melting.png`. Say: “At low temperature, several sharp radial-distribution peaks persist. At high temperature the distant peaks flatten toward one. During the 400-atom ramp, long-range RDF contrast falls from 0.348 to 0.097, which is quantitative evidence of loss of order.”
 6. End on the public GitHub Pages viewer and show that the 400 atoms, 200 frames, temperature rise, and RDF update without signing in.
 
-Upload the finished video to a GitHub Release, keep it at or below two minutes, and place its URL beside the Pages URL in `README.md`.
+The repository already has a draft release named `Week 2: Agentic Coding with Rust` with tag `week2-submission`. Keep the finished video at or below two minutes, name it `week2-recording.mp4`, and upload it with:
+
+```bash
+gh release upload week2-submission week2-recording.mp4 \
+  --repo Tye-Wu/AMAT5315-2026Fall-Exercise
+```
+
+Then obtain the asset URL, place it beside the Pages URL in `README.md`, commit that README change, and publish the draft:
+
+```bash
+gh release view week2-submission \
+  --repo Tye-Wu/AMAT5315-2026Fall-Exercise \
+  --json assets --jq '.assets[] | select(.name=="week2-recording.mp4") | .url'
+gh release edit week2-submission \
+  --repo Tye-Wu/AMAT5315-2026Fall-Exercise --draft=false
+```
+
+Draft-release preparation URL (visible to the repository owner):
+<https://github.com/Tye-Wu/AMAT5315-2026Fall-Exercise/releases/tag/untagged-4aabd4bc837873796ea9>
